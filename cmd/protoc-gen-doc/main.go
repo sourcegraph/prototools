@@ -7,7 +7,9 @@
 package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-doc"
 
 import (
+	"bytes"
 	"go/build"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -71,7 +73,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err, ": failed to parse templates")
 	}
-	g.Template = g.Template.Templates()[0]
+	g.Template = g.Template.Lookup(filepath.Base(tmplPath))
 
 	// Perform generation.
 	response, err := g.Generate()
@@ -84,7 +86,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err, ": failed to marshal output proto")
 	}
-	_, err = os.Stdout.Write(data)
+	_, err = io.Copy(os.Stdout, bytes.NewReader(data))
 	if err != nil {
 		log.Fatal(err, ": failed to write output proto")
 	}
