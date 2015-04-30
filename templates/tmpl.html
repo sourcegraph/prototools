@@ -2,8 +2,8 @@
 	{{$location := location .}}
 	{{if $location}}
 		{{if or $location.LeadingComments $location.TrailingComments}}
-			{{$location.LeadingComments}}
-			{{$location.TrailingComments}}
+			{{if $location.LeadingComments}}{{$location.LeadingComments}}{{end}}
+			{{if $location.TrailingComments}}{{$location.TrailingComments}}{{end}}
 		{{end}}
 	{{end}}
 {{end}}
@@ -13,8 +13,8 @@
 	{{if $location}}
 		{{if or $location.LeadingComments $location.TrailingComments}}
 			<p class="description">Description:&nbsp;
-					{{$location.LeadingComments}}
-					{{$location.TrailingComments}}
+					{{if $location.LeadingComments}}{{$location.LeadingComments}}{{end}}
+					{{if $location.TrailingComments}}{{$location.TrailingComments}}{{end}}
 			</p>
 		{{end}}
 	{{end}}
