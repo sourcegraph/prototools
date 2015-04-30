@@ -1,0 +1,158 @@
+{{define "Comments"}}
+	{{$location := location .}}
+	{{if $location}}
+		{{if or $location.LeadingComments $location.TrailingComments}}
+			{{$location.LeadingComments}}
+			{{$location.TrailingComments}}
+		{{end}}
+	{{end}}
+{{end}}
+
+{{define "CommentsParagraph"}}
+	{{$location := location .}}
+	{{if $location}}
+		{{if or $location.LeadingComments $location.TrailingComments}}
+			<p class="description">Description:&nbsp;
+					{{$location.LeadingComments}}
+					{{$location.TrailingComments}}
+			</p>
+		{{end}}
+	{{end}}
+{{end}}
+
+<style>
+.doc table, .doc tr, .doc td, .doc th {
+	margin: 0;
+	padding: 0;
+	border-collapse: collapse;
+}
+
+.doc table {
+	margin-left: 1em;
+}
+
+.doc td {
+	padding: 1em;
+	padding-top: .3em;
+	padding-bottom: .3em;
+	border-bottom: 1px solid black;
+}
+
+.doc-inner {
+	margin-left: 1em;
+}
+</style>
+
+<div class="doc">
+	<h1>{{.Package}}</h1>
+	<div class="doc-inner">
+		<p>
+			<code>{{.Name}}</code> (syntax: <code>{{.Syntax}}</code>)
+		</p>
+	</div>
+
+	<!-- Dependencies -->
+	{{if .Dependency}}
+		<div class="doc-dependencies">
+			<h1>Dependencies</h1>
+			<div class="doc-inner">
+				<ul>
+					{{range $d := .Dependency}}
+						<li>{{$d}}</li>
+					{{end}}
+				</ul>
+			</div>
+		</div>
+	{{end}}
+
+	<!-- Enumerations -->
+	{{if .EnumType}}
+		<div class="doc-enum-types">
+			<h1>Enums</h1>
+			{{range $e := .EnumType}}
+				<div class="doc-inner">
+					<h2>Enum: {{$e.Name}}</h2>
+					{{template "CommentsParagraph" $e}}
+					{{if .Value}}
+						<table>
+							<tr><td>Name</td><td>Value</td><td>Description</td></tr>
+							{{range .Value}}
+								<tr>
+									<td>{{.Name}}</td>
+									<td>{{.Number}} {{if .Options}}{{if .Options.Deprecated}}(deprecated){{end}}{{end}}</td>
+									<td>{{template "Comments" .}}</td>
+								</tr>
+							{{end}}
+						</table>
+					{{end}}
+				</div>
+			{{end}}
+		</div>
+	{{end}}
+
+	<!-- Extensions -->
+	{{if .Extension}}
+		<div class="doc-extensions">
+			<h1>Extensions</h1>
+			{{range $e := .Extension}}
+				<div class="doc-inner">
+					<h2>Extension: {{$e.Name}}</h2>
+					{{template "CommentsParagraph" $e}}
+				</div>
+			{{end}}
+		</div>
+	{{end}}
+
+	<!-- Services -->
+	{{if .Service}}
+		<div class="doc-services">
+			<h1>Services</h1>
+			{{range $s := .Service}}
+				<div class="doc-inner">
+					<h2>Service: {{$s.Name}}</h2>
+					{{template "CommentsParagraph" $s}}
+					<table>
+						<tr><td>Method</td><td>Input Type</td><td>Output Type</td><td>Description</td></tr>
+						{{range $s.Method}}
+							<tr>
+								<td>{{.Name}}
+									{{if .ClientStreaming}}*Client-Streaming {{end}}
+									{{if .ServerStreaming}}*Server-Streaming {{end}}
+									{{if .Options}}{{if .Options.Deprecated}}*Deprecated{{end}}{{end}}
+								</td>
+								<td>{{.InputType}}</td>
+								<td>{{.OutputType}}</td>
+								<td>{{template "Comments" .}}</td>
+							</tr>
+						{{end}}
+					</table>
+				</div>
+			{{end}}
+		</div>
+	{{end}}
+
+	<!-- Messages -->
+	{{if .MessageType}}
+		<div class="doc-message-types">
+			<h1>Messages</h1>
+			{{range $m := .MessageType}}
+				<div class="doc-inner">
+					<h2>Message: {{$m.Name}}</h2>
+					{{template "CommentsParagraph" $m}}
+					<table>
+						<tr><td>#</td><td>Field</td><td>Label</td><td>Type</td><td>Description</td></tr>
+						{{range $m.Field}}
+							<tr>
+								<td>{{.Number}}</td>
+								<td>{{.Name}}</td>
+								<td>{{cleanLabel .Label}}</td>
+								<td>{{fieldType .}}</td>
+								<td>{{template "Comments" .}}</td>
+							</tr>
+						{{end}}
+					</table>
+				</div>
+			{{end}}
+		</div>
+	{{end}}
+</div>
