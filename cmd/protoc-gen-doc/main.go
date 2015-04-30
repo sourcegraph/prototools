@@ -9,12 +9,12 @@ package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-do
 import (
 	"bytes"
 	"go/build"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/golang/protobuf/proto"
 	"sourcegraph.com/sourcegraph/prototools/tmpl"

@@ -4,8 +4,8 @@ package tmpl // import "sourcegraph.com/sourcegraph/prototools/tmpl"
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"strings"
-	"text/template"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )

@@ -2,11 +2,11 @@ package tmpl
 
 import (
 	"fmt"
+	"html/template"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
-	"text/template"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
