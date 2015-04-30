@@ -69,9 +69,10 @@ type tmplFuncs struct {
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
 	return map[string]interface{}{
-		"location":   f.location,
 		"cleanLabel": f.cleanLabel,
+		"cleanType":  f.cleanType,
 		"fieldType":  f.fieldType,
+		"location":   f.location,
 	}
 }
 
@@ -90,11 +91,18 @@ func (f *tmplFuncs) cleanLabel(l *descriptor.FieldDescriptorProto_Label) string 
 	}
 }
 
+// cleanType returns the last part of a types name, i.e. for a fully-qualified
+// type ".foo.bar.baz" it would return just "baz".
+func (f *tmplFuncs) cleanType(path string) string {
+	split := strings.Split(path, ".")
+	return split[len(split)-1]
+}
+
 // fieldType returns the clean (i.e. human-readable / protobuf-style) version
 // of a field type.
 func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 	if field.TypeName != nil {
-		return *field.TypeName
+		return f.cleanType(*field.TypeName)
 	}
 	switch int32(*field.Type) {
 	case 1:
@@ -198,7 +206,7 @@ func (f *tmplFuncs) walkPath(path []int32) interface{} {
 	return found
 }
 
-// protoFields invokes fn with the protobuf tag ID and it's in-memory Go value
+// protoFields invokes fn with the protobuf tag ID and its in-memory Go value
 // given a descriptor node type. It stops invoking fn when it returns false.
 func (f *tmplFuncs) protoFields(node reflect.Value, fn func(id int, v interface{}) bool) {
 	indirect := reflect.Indirect(node)

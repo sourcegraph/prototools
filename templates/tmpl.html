@@ -120,8 +120,8 @@
 									{{if .ServerStreaming}}*Server-Streaming {{end}}
 									{{if .Options}}{{if .Options.Deprecated}}*Deprecated{{end}}{{end}}
 								</td>
-								<td>{{.InputType}}</td>
-								<td>{{.OutputType}}</td>
+								<td>{{cleanType .InputType}}</td>
+								<td>{{cleanType .OutputType}}</td>
 								<td>{{template "Comments" .}}</td>
 							</tr>
 						{{end}}
