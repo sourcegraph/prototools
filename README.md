@@ -1,4 +1,4 @@
-# prototools
+-# prototools
 
 This repository holds various Protobuf/gRPC tools.
 
