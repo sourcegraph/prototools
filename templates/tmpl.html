@@ -71,7 +71,7 @@
 			<h1>Enums</h1>
 			{{range $e := .EnumType}}
 				<div class="doc-inner">
-					<h2>Enum: {{$e.Name}}</h2>
+					<h2 id="{{fullyQualified $e.Name}}">Enum: {{$e.Name}}</h2>
 					{{template "CommentsParagraph" $e}}
 					{{if .Value}}
 						<table>
@@ -96,7 +96,7 @@
 			<h1>Extensions</h1>
 			{{range $e := .Extension}}
 				<div class="doc-inner">
-					<h2>Extension: {{$e.Name}}</h2>
+					<h2 id="{{fullyQualified $e.Name}}">Extension: {{$e.Name}}</h2>
 					{{template "CommentsParagraph" $e}}
 				</div>
 			{{end}}
@@ -109,7 +109,7 @@
 			<h1>Services</h1>
 			{{range $s := .Service}}
 				<div class="doc-inner">
-					<h2>Service: {{$s.Name}}</h2>
+					<h2 id="{{fullyQualified $s.Name}}">Service: {{$s.Name}}</h2>
 					{{template "CommentsParagraph" $s}}
 					<table>
 						<tr><td>Method</td><td>Input Type</td><td>Output Type</td><td>Description</td></tr>
@@ -120,8 +120,8 @@
 									{{if .ServerStreaming}}*Server-Streaming {{end}}
 									{{if .Options}}{{if .Options.Deprecated}}*Deprecated{{end}}{{end}}
 								</td>
-								<td>{{cleanType .InputType}}</td>
-								<td>{{cleanType .OutputType}}</td>
+								<td><a href="{{urlToType .InputType}}">{{cleanType .InputType}}</a></td>
+								<td><a href="{{urlToType .OutputType}}">{{cleanType .OutputType}}</a></td>
 								<td>{{template "Comments" .}}</td>
 							</tr>
 						{{end}}
@@ -137,7 +137,7 @@
 			<h1>Messages</h1>
 			{{range $m := .MessageType}}
 				<div class="doc-inner">
-					<h2>Message: {{$m.Name}}</h2>
+					<h2 id="{{fullyQualified $m.Name}}">Message: {{$m.Name}}</h2>
 					{{template "CommentsParagraph" $m}}
 					<table>
 						<tr><td>#</td><td>Field</td><td>Label</td><td>Type</td><td>Description</td></tr>
@@ -146,7 +146,11 @@
 								<td>{{.Number}}</td>
 								<td>{{.Name}}</td>
 								<td>{{cleanLabel .Label}}</td>
-								<td>{{fieldType .}}</td>
+								{{if .TypeName}}
+									<td><a href="{{urlToType .TypeName}}">{{fieldType .}}</td>
+								{{else}}
+									<td>{{fieldType .}}</td>
+								{{end}}
 								<td>{{template "Comments" .}}</td>
 							</tr>
 						{{end}}

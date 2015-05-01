@@ -55,7 +55,8 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	buf := new(bytes.Buffer)
 	for _, f := range g.Request.GetProtoFile() {
 		ctx := &tmplFuncs{
-			f: f,
+			f:   f,
+			ext: ext,
 		}
 
 		// Execute the template and generate a response for the input file.
