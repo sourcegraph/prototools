@@ -1,20 +1,20 @@
 {{define "Comments"}}
-	{{$location := location .}}
-	{{if $location}}
-		{{if or $location.LeadingComments $location.TrailingComments}}
-			{{if $location.LeadingComments}}{{$location.LeadingComments}}{{end}}
-			{{if $location.TrailingComments}}{{$location.TrailingComments}}{{end}}
+	{{$l := location .}}
+	{{if $l}}
+		{{if or $l.LeadingComments $l.TrailingComments}}
+			{{with $l.LeadingComments}}{{.}}{{end}}
+			{{with $l.TrailingComments}}{{.}}{{end}}
 		{{end}}
 	{{end}}
 {{end}}
 
 {{define "CommentsParagraph"}}
-	{{$location := location .}}
-	{{if $location}}
-		{{if or $location.LeadingComments $location.TrailingComments}}
+	{{$l := location .}}
+	{{if $l}}
+		{{if or $l.LeadingComments $l.TrailingComments}}
 			<p class="description">Description:&nbsp;
-					{{if $location.LeadingComments}}{{$location.LeadingComments}}{{end}}
-					{{if $location.TrailingComments}}{{$location.TrailingComments}}{{end}}
+					{{with $l.LeadingComments}}{{.}}{{end}}
+					{{with $l.TrailingComments}}{{.}}{{end}}
 			</p>
 		{{end}}
 	{{end}}
