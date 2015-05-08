@@ -29,3 +29,11 @@ protoc --doc_out="template=templates/tmpl.html:doc/" file.proto
 ```
 
 Would produce documentation using `templates/tmpl.html` inside the `doc/` output directory for `file.proto`.
+
+# proto_path issues
+
+You will quickly find that the generator fails if you run it with a `--proto_path` argument. This is because `protoc` does not pass it's command-line arguments onto generator programs (and `protoc-gen-doc` needs to know the `--proto_path` arguments in order to resolve symbols appropriately). To workaround this issue you must export the `$PROTO_PATH` environment variable, thus you can run `protoc` as just:
+
+```
+PROTO_PATH="--proto_path=/my/custom/path" protoc $(PROTO_ARGS) --doc_out="template=templates/tmpl.html:doc/" file.proto
+```
