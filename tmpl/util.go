@@ -1,15 +1,28 @@
 package tmpl
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
+
+// parseProtoPath parses the PROTO_PATH environment variable.
+func parseProtoPath() (paths []string) {
+	for _, s := range strings.Split(os.Getenv("PROTO_PATH"), " ") {
+		paths = append(paths, strings.TrimPrefix(s, "--proto_path="))
+	}
+	return
+}
 
 // findExt iterates through the templates and finds the first file extension it
 // can, or returns an empty string if none is found. It should be invoked
@@ -48,6 +61,35 @@ func stripExt(s string) string {
 	return s
 }
 
+var rePkgStmt = regexp.MustCompile(`(?m)^\s*package\s+(\w+)\s*;`)
+
+// pkgStmt parses the package statement in a proto file, returning the package
+// name, or an empty string if parsing fails.
+//
+// r must satisfy the io.RuneReader, io.Reader, and io.Seeker interfaces.
+func pkgStmt(r interface{}) (pkg string, err error) {
+	m := rePkgStmt.FindReaderSubmatchIndex(r.(io.RuneReader))
+	if len(m) < 4 {
+		return "", nil
+	}
+	nameStart := m[2]
+	nameEnd := m[3]
+
+	// Seek to the start of the package name.
+	_, err = r.(io.Seeker).Seek(int64(nameStart), 0)
+	if err != nil {
+		return "", err
+	}
+
+	// Read the package name.
+	pkgName := make([]byte, nameEnd-nameStart)
+	_, err = io.ReadFull(r.(io.Reader), pkgName)
+	if err != nil {
+		return "", err
+	}
+	return string(pkgName), nil
+}
+
 var Preload = (&tmplFuncs{}).funcMap()
 
 // cacheItem is a single cache item with a value and a location -- effectively
@@ -57,6 +99,17 @@ type cacheItem struct {
 	L *descriptor.SourceCodeInfo_Location
 }
 
+// newTmplFuncs returns an initialized template function structure.
+func newTmplFuncs(fd *descriptor.FileDescriptorProto, ext string) *tmplFuncs {
+	f := &tmplFuncs{
+		f:   fd,
+		ext: ext,
+	}
+	f.pkgNameCache = make(map[string]string, 16)
+	f.protoPath = parseProtoPath()
+	return f
+}
+
 // Functions exposed to templates. The user of the package must first preload
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
@@ -64,7 +117,9 @@ type tmplFuncs struct {
 	f   *descriptor.FileDescriptorProto
 	ext string
 
-	locCache []cacheItem
+	protoPath    []string
+	locCache     []cacheItem
+	pkgNameCache map[string]string // Map of file names to their package names.
 }
 
 // funcMap returns the function map for feeding into templates.
@@ -152,14 +207,17 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 // urlToType returns a URL to the documentation file for the given type. The
 // input type path can be either fully-qualified or not, regardless, the URL
 // returned will always have a fully-qualified hash.
-func (f *tmplFuncs) urlToType(typePath string) string {
+func (f *tmplFuncs) urlToType(typePath string) (string, error) {
 	typePath = f.fullyQualified(typePath)
 
 	// Resolve the package path for the type.
 	pkg := strings.Split(typePath, ".")[1]
-	pkgPath := f.resolvePkgPath(pkg)
+	pkgPath, err := f.resolvePkgPath(pkg)
+	if err != nil {
+		return "", err
+	}
 	if pkgPath == "" {
-		return ""
+		return "", nil
 	}
 
 	// Make the path relative to this documentation files directory and then swap
@@ -167,7 +225,7 @@ func (f *tmplFuncs) urlToType(typePath string) string {
 	basePath := filepath.Dir(*f.f.Name)
 	rel, _ := filepath.Rel(basePath, pkgPath)
 	rel = stripExt(rel) + f.ext
-	return fmt.Sprintf("%s#%s", rel, typePath)
+	return fmt.Sprintf("%s#%s", rel, typePath), nil
 }
 
 // fullyQualified returns the fully qualified path for the given type path.
@@ -186,27 +244,79 @@ func (f *tmplFuncs) fullyQualified(typePath string) string {
 	return fmt.Sprintf(".%s.%s", pkg, typePath)
 }
 
+// pkgName parses the named file path for a package statement and returns the
+// package name.
+func (f *tmplFuncs) pkgName(path string) (string, error) {
+	// Grab the name from cache if we already have it.
+	cached, ok := f.pkgNameCache[path]
+	if ok {
+		return cached, nil
+	}
+
+	// Parse for the package name and put into cache.
+	var (
+		file *os.File
+		err  error
+	)
+	for _, includeDir := range f.protoPath {
+		file, err = os.Open(filepath.Join(includeDir, path))
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		defer file.Close()
+		break
+	}
+	if file == nil {
+		return "", fmt.Errorf("not found in PROTO_PATH: %s", path)
+	}
+
+	// *os.File is -- but bufio.Reader isn't -- an io.Seeker, so we end up reading
+	// the whole file into memory anyway.
+	//
+	// TODO(slimsag): adopt a line-by-line approach instead.
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	pkg, err := pkgStmt(bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	if pkg == "" {
+		// It's the file name then,
+		pkg = stripExt(filepath.Base(path))
+	}
+	f.pkgNameCache[path] = pkg
+	return pkg, nil
+}
+
 // resolvePkgPath resolves the named protobuf package, returning it's file
 // path.
-//
-// TODO(slimsag): This function assumes that the package ("package foo;") is
-// named identically to its file name ("foo.proto"). Protoc doesn't pass such
-// information to us because it hasn't parsed all the files yet -- we will most
-// likely have to scan for the package statement in these dependency files
-// ourselves.
-func (f *tmplFuncs) resolvePkgPath(pkg string) string {
+func (f *tmplFuncs) resolvePkgPath(pkg string) (string, error) {
 	// Test this proto file itself:
-	if stripExt(filepath.Base(*f.f.Name)) == pkg {
-		return *f.f.Name
+	name, err := f.pkgName(*f.f.Name)
+	if err != nil {
+		return "", err
+	}
+	if name == pkg {
+		return *f.f.Name, nil
 	}
 
 	// Test each dependency:
 	for _, p := range f.f.Dependency {
-		if stripExt(filepath.Base(p)) == pkg {
-			return p
+		name, err = f.pkgName(p)
+		if err != nil {
+			return "", err
+		}
+		if name == pkg {
+			return p, nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 // location returns the source code info location for the generic AST-like node

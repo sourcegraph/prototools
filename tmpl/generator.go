@@ -54,14 +54,9 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	errs := new(bytes.Buffer)
 	buf := new(bytes.Buffer)
 	for _, f := range g.Request.GetProtoFile() {
-		ctx := &tmplFuncs{
-			f:   f,
-			ext: ext,
-		}
-
 		// Execute the template and generate a response for the input file.
 		buf.Reset()
-		err := g.Template.Funcs(ctx.funcMap()).Execute(buf, f)
+		err := g.Template.Funcs(newTmplFuncs(f, ext).funcMap()).Execute(buf, f)
 
 		// If an error occured during executing the template, we pass it pack to
 		// protoc via the error field in the response.
