@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"sourcegraph.com/sourcegraph/prototools/util"
 )
 
 // findExt iterates through the templates and finds the first file extension it
@@ -107,46 +108,7 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 	if field.TypeName != nil {
 		return f.cleanType(*field.TypeName)
 	}
-	switch int32(*field.Type) {
-	case 1:
-		return "double"
-	case 2:
-		return "float"
-	case 3:
-		return "int64"
-	case 4:
-		return "uint64"
-	case 5:
-		return "int32"
-	case 6:
-		return "fixed64"
-	case 7:
-		return "fixed32"
-	case 8:
-		return "bool"
-	case 9:
-		return "string"
-	case 10:
-		return "group"
-	case 11:
-		return "message"
-	case 12:
-		return "bytes"
-	case 13:
-		return "uint32"
-	case 14:
-		return "enum"
-	case 15:
-		return "sfixed32"
-	case 16:
-		return "sfixed64"
-	case 17:
-		return "sint32"
-	case 18:
-		return "sint64"
-	default:
-		panic("unknown type")
-	}
+	return util.FieldTypeName(field.Type)
 }
 
 // urlToType returns a URL to the documentation file for the given type. The
