@@ -191,6 +191,13 @@ func (f *tmplFuncs) fullyQualified(typePath string) string {
 // path.
 func (f *tmplFuncs) resolvePkgPath(pkg string) string {
 	for _, file := range f.protoFile {
+		// A file's package name is for example:
+		//
+		//  package pbtypes; // GetPackage() == "pbtypes"
+		//  package google.protobuf; // GetPackage() == "google.protobuf"
+		//
+		// For the latter case we need to resolve a package like "google" to the
+		// package named "google.protobuf".
 		for _, d := range strings.Split(file.GetPackage(), ".") {
 			if d == pkg {
 				return file.GetName()
