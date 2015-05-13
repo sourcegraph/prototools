@@ -16,16 +16,23 @@ go get -u sourcegraph.com/sourcegraph/prototools/...
 
 # Usage
 
-The basic syntax is to invoke protoc with `--doc_out` where all documentation-related options are passed separated by colons (`:`):
+The basic syntax is to invoke protoc with `--doc_out`:
 
 ```
+protoc --doc_out="<OUT_DIR>" input.proto
 protoc --doc_out="<OPTIONS>:<OUT_DIR>" input.proto
 ```
 
-For example:
+Where `<OPTIONS>` is a comma-seperated list of `key=value` options listed below, for example:
 
 ```
 protoc --doc_out="template=templates/tmpl.html:doc/" file.proto
 ```
 
 Would produce documentation using `templates/tmpl.html` inside the `doc/` output directory for `file.proto`.
+
+# Options
+
+| Option     | Description                                                        |
+|------------|--------------------------------------------------------------------|
+| `template` | Input `.html` `text/template` template file to use for generation. |
