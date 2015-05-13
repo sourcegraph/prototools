@@ -38,7 +38,7 @@ type Generator struct {
 // If any error is encountered during generation, it is returned and should be
 // considered fatal to the generation process (the response will be nil).
 func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err error) {
-	// Reset the response to it's initial state.
+	// Reset the response to its initial state.
 	g.response.Reset()
 
 	// Parse command-line parameters.

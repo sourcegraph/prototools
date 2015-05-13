@@ -187,7 +187,7 @@ func (f *tmplFuncs) fullyQualified(typePath string) string {
 	return fmt.Sprintf(".%s.%s", pkg, typePath)
 }
 
-// resolvePkgPath resolves the named protobuf package, returning it's file
+// resolvePkgPath resolves the named protobuf package, returning its file
 // path.
 func (f *tmplFuncs) resolvePkgPath(pkg string) string {
 	for _, file := range f.protoFile {
