@@ -61,8 +61,9 @@ type cacheItem struct {
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
 type tmplFuncs struct {
-	f   *descriptor.FileDescriptorProto
-	ext string
+	f         *descriptor.FileDescriptorProto
+	ext       string
+	protoFile []*descriptor.FileDescriptorProto
 
 	locCache []cacheItem
 }
@@ -186,24 +187,21 @@ func (f *tmplFuncs) fullyQualified(typePath string) string {
 	return fmt.Sprintf(".%s.%s", pkg, typePath)
 }
 
-// resolvePkgPath resolves the named protobuf package, returning it's file
+// resolvePkgPath resolves the named protobuf package, returning its file
 // path.
-//
-// TODO(slimsag): This function assumes that the package ("package foo;") is
-// named identically to its file name ("foo.proto"). Protoc doesn't pass such
-// information to us because it hasn't parsed all the files yet -- we will most
-// likely have to scan for the package statement in these dependency files
-// ourselves.
 func (f *tmplFuncs) resolvePkgPath(pkg string) string {
-	// Test this proto file itself:
-	if stripExt(filepath.Base(*f.f.Name)) == pkg {
-		return *f.f.Name
-	}
-
-	// Test each dependency:
-	for _, p := range f.f.Dependency {
-		if stripExt(filepath.Base(p)) == pkg {
-			return p
+	for _, file := range f.protoFile {
+		// A file's package name is for example:
+		//
+		//  package pbtypes; // GetPackage() == "pbtypes"
+		//  package google.protobuf; // GetPackage() == "google.protobuf"
+		//
+		// For the latter case we need to resolve a package like "google" to the
+		// package named "google.protobuf".
+		for _, d := range strings.Split(file.GetPackage(), ".") {
+			if d == pkg {
+				return file.GetName()
+			}
 		}
 	}
 	return ""
