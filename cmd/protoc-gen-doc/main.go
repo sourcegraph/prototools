@@ -18,6 +18,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"sourcegraph.com/sourcegraph/prototools/tmpl"
+	"sourcegraph.com/sourcegraph/prototools/util"
 )
 
 // PathDir returns the absolute path to a file given a relative one in one of
@@ -58,9 +59,9 @@ func main() {
 
 	// Parse the command-line parameters and determine the correct template file
 	// to execute.
-	g.ParseParams()
+	params := util.ParseParams(g.Request)
 	var tmplPath string
-	if v, ok := g.Param["template"]; ok {
+	if v, ok := params["template"]; ok {
 		tmplPath = v
 	} else {
 		tmplPath = PathDir("src/sourcegraph.com/sourcegraph/prototools/templates/tmpl.html")

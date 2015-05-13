@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"strings"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
@@ -19,10 +18,6 @@ type Generator struct {
 	// The template to execute for generation, which should be set by the user of
 	// this package.
 	Template *template.Template
-
-	// The command-line parameters passed to the generator via protoc; initialized
-	// after g.ParseParams or g.Generate has been called.
-	Param map[string]string
 
 	// Extension is the extension string to name generated files with. If it is an
 	// empty string, the extension of the first template file is used.
@@ -40,9 +35,6 @@ type Generator struct {
 func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err error) {
 	// Reset the response to it's initial state.
 	g.response.Reset()
-
-	// Parse command-line parameters.
-	g.ParseParams()
 
 	// Determine the extension string.
 	ext := g.Extension
@@ -87,24 +79,6 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 		g.response.Error = &errsStr
 	}
 	return g.response, nil
-}
-
-// ParseParams parses the command-line parameters passed to the generator by
-// protoc via g.Request.GetParameters. It can be called as soon as g.Request is
-// assigned; and is automatically called at generation time.
-func (g *Generator) ParseParams() {
-	// Split the parameter string and initialize the map.
-	split := strings.Split(g.Request.GetParameter(), ",")
-	g.Param = make(map[string]string, len(split))
-
-	// Map the parameters.
-	for _, p := range split {
-		if i := strings.Index(p, "="); i < 0 {
-			g.Param[p] = ""
-		} else {
-			g.Param[p[0:i]] = p[i+1:]
-		}
-	}
 }
 
 // New returns a new generator for the given template.
