@@ -1,5 +1,9 @@
 // Command protoc-gen-doc is a Protobuf plugin for documentation generation.
 //
+// Documentation can be found inside:
+//
+//  README.doc.md (https://github.com/sourcegraph/prototools/blob/master/README.doc.md)
+//
 // More information about Protobuf can be found at:
 //
 // 	https://developers.google.com/protocol-buffers/
