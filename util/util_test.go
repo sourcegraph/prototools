@@ -70,3 +70,24 @@ func TestTrimElem(t *testing.T) {
 		}
 	}
 }
+
+func TestCountElem(t *testing.T) {
+	tests := []struct {
+		symbolPath string
+		want       int
+	}{
+		{"a.b.c", 3},
+		{".a.b.c", 3},
+		{"a.b.c.d", 4},
+		{"a", 1},
+		{".", 0},
+		{"", 0},
+	}
+	for _, tst := range tests {
+		got := CountElem(tst.symbolPath)
+		if got != tst.want {
+			t.Logf("symbolPath=%q\n", tst.symbolPath)
+			t.Fatalf("got %v want %v\n", got, tst.want)
+		}
+	}
+}

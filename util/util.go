@@ -120,3 +120,24 @@ func TrimElem(symbolPath string, n int) string {
 	}
 	return strings.Join(split[:len(split)+n], ".")
 }
+
+// CountElem returns the number of elements that the symbol path contains.
+//
+//  CountElem("a.b.c") == 3
+//  CountElem(".a.b.c") == 3
+//  CountElem("a.b.c.d") == 4
+//  CountElem("a") == 1
+//  CountElem(".") == 0
+//  CountElem("") == 0
+//
+func CountElem(symbolPath string) int {
+	// Don't care about fully-qualified dot prefix.
+	symbolPath = strings.TrimPrefix(symbolPath, ".")
+	count := 0
+	for _, s := range strings.Split(symbolPath, ".") {
+		if len(s) > 0 {
+			count++
+		}
+	}
+	return count
+}
