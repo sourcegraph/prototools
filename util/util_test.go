@@ -39,3 +39,34 @@ func TestIsFullyQualified(t *testing.T) {
 		}
 	}
 }
+
+func TestTrimElem(t *testing.T) {
+	tests := []struct {
+		symbolPath, want string
+		n                int
+	}{
+		// Standard cases:
+		{"a.b.c", "b.c", 1},
+		{".a.b.c", "b.c", 1},
+		{".a.b.c", ".a.b", -1},
+
+		// Extreme cases:
+		{"a.b.c", "", 1000},
+		{".a.b.c", "", 1000},
+		{"a.b.c", "", -1000},
+		{".a.b.c", "", -1000},
+
+		{".a.b.c.d", "b.c.d", 1},
+		{"a.b.c.d", "b.c.d", 1},
+		{".a.b.c.d", "c.d", 2},
+		{"a.b.c.d.e", "", 1000},
+	}
+	for _, tst := range tests {
+		got := TrimElem(tst.symbolPath, tst.n)
+		if got != tst.want {
+			t.Logf("symbolPath=%q\n", tst.symbolPath)
+			t.Logf("n=%v\n", tst.n)
+			t.Fatalf("got %q want %q\n", got, tst.want)
+		}
+	}
+}

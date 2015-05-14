@@ -79,3 +79,44 @@ func FieldTypeName(f *descriptor.FieldDescriptorProto_Type) string {
 func IsFullyQualified(symbolPath string) bool {
 	return symbolPath[0] == '.'
 }
+
+// TrimElem returns the given symbol path with at max N elements trimmed off the
+// left (outermost) side.
+//
+//  TrimElem("a.b.c", 1) == "b.c"
+//  TrimElem(".a.b.c", 1) == "b.c"
+//  TrimElem(".a.b.c", -1) == ".a.b"
+//
+// Extreme cases won't panic, either:
+//
+//  TrimElem("a.b.c", 1000) == ""
+//  TrimElem(".a.b.c", 1000) == ""
+//  TrimElem("a.b.c", -1000) == ""
+//  TrimElem(".a.b.c", -1000) == ""
+//
+func TrimElem(symbolPath string, n int) string {
+	if n == 0 {
+		return symbolPath
+	}
+	if n > 0 {
+		// Trimming from the left side. All paths here will become relative if n > 0
+		// as we're trimming the root (left side) off.
+		symbolPath = strings.TrimPrefix(symbolPath, ".")
+
+		// Avoid indexing panic if we don't actually have N elements.
+		split := strings.Split(symbolPath, ".")
+		if len(split) < n {
+			n = len(split)
+		}
+		return strings.Join(split[n:], ".")
+	}
+
+	// Trimming from the right side, then.
+	split := strings.Split(symbolPath, ".")
+
+	// Avoid indexing panic if we don't actually have N elements.
+	if -n > len(split) {
+		n = -len(split)
+	}
+	return strings.Join(split[:len(split)+n], ".")
+}
