@@ -24,3 +24,18 @@ func TestParseParams(t *testing.T) {
 		t.Fatal(`"z" != "g"`)
 	}
 }
+
+func TestIsFullyQualified(t *testing.T) {
+	tests := map[string]bool{
+		".google.protobuf.UninterpretedOption": true,
+		".google.protobuf.FieldOptions.CType":  true,
+		"protobuf.FieldOptions.CType":          false,
+		"UninterpretedOption":                  false,
+	}
+	for symbolPath, want := range tests {
+		got := IsFullyQualified(symbolPath)
+		if got != want {
+			t.Fatalf("got %v want %v", got, want)
+		}
+	}
+}

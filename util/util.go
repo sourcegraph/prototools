@@ -73,3 +73,9 @@ func FieldTypeName(f *descriptor.FieldDescriptorProto_Type) string {
 		panic("FieldTypeName: unknown field type")
 	}
 }
+
+// IsFullyQualified tells if the given symbol path is fully-qualified or not (i.e.
+// starts with a period).
+func IsFullyQualified(symbolPath string) bool {
+	return symbolPath[0] == '.'
+}
