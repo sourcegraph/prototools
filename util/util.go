@@ -2,6 +2,7 @@
 package util // import "sourcegraph.com/sourcegraph/prototools/util"
 
 import (
+	"path"
 	"strings"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -140,4 +141,21 @@ func CountElem(symbolPath string) int {
 		}
 	}
 	return count
+}
+
+// PackageName returns the package name of the given file, which is either the
+// result of f.GetPackage (a package set explicitly by the user) or the name of
+// the file.
+func PackageName(f *descriptor.FileDescriptorProto) string {
+	// Check for an explicit package name given by the user in a protobuf file as
+	//
+	//  package foo;
+	//
+	if pkg := f.GetPackage(); len(pkg) > 0 {
+		return pkg
+	}
+	// Otherwise use the name of the file (note: not filepath.Base because
+	// protobuf only speaks in unix path terms).
+	pkg := path.Base(f.GetName())
+	return strings.TrimSuffix(pkg, path.Ext(pkg))
 }

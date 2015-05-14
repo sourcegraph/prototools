@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
@@ -89,5 +90,21 @@ func TestCountElem(t *testing.T) {
 			t.Logf("symbolPath=%q\n", tst.symbolPath)
 			t.Fatalf("got %v want %v\n", got, tst.want)
 		}
+	}
+}
+
+func TestPackageName(t *testing.T) {
+	got := PackageName(&descriptor.FileDescriptorProto{
+		Package: proto.String("foo"),
+	})
+	if got != "foo" {
+		t.Fatal("expected explicit package name \"foo\", got %q\n", got)
+	}
+
+	got = PackageName(&descriptor.FileDescriptorProto{
+		Name: proto.String("some/arbitrary/file.proto"),
+	})
+	if got != "file" {
+		t.Fatalf("expected derived package name \"file\", got %q\n", got)
 	}
 }
