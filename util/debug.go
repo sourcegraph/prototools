@@ -1,6 +1,6 @@
 // +build debug
 
-package tmpl
+package util
 
 import (
 	"fmt"
@@ -11,12 +11,12 @@ var logFile *os.File
 
 func init() {
 	var err error
-	logFile, err = os.Create("tmpl.log")
+	logFile, err = os.Create(os.Args[0] + ".log")
 	if err != nil {
 		panic(err)
 	}
 }
 
-func debugf(f string, args ...interface{}) {
+func Debugf(f string, args ...interface{}) {
 	fmt.Fprintf(logFile, f, args...)
 }
