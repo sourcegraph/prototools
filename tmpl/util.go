@@ -145,8 +145,7 @@ func (f *tmplFuncs) urlToType(symbolPath string) string {
 	return fmt.Sprintf("%s#%s", rel, typePath)
 }
 
-// resolvePkgPath resolves the named protobuf package, returning it's file
-// path.
+// resolvePkgPath resolves the named protobuf package, returning its file path.
 //
 // TODO(slimsag): This function assumes that the package ("package foo;") is
 // named identically to its file name ("foo.proto"). Protoc doesn't pass such

@@ -10,7 +10,7 @@ import (
 // ASTNode is a type from the descriptor package.
 type ASTNode interface{}
 
-// ASTNamedNode is a type from the descriptor package that can return it's name
+// ASTNamedNode is a type from the descriptor package that can return its name
 // string. These include (but are not limited to):
 //
 //  *descriptor.DescriptorProto
@@ -124,7 +124,7 @@ func (r *Resolver) ResolveSymbol(symbolPath string, relative ASTNode) ASTNode {
 	return node
 }
 
-// Resolve resolves the named symbol into it's actual AST node and the file that
+// Resolve resolves the named symbol into its actual AST node and the file that
 // node is inside of. Example symbolPath strings are:
 //
 //  Sym
