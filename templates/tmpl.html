@@ -66,14 +66,15 @@
 	{{end}}
 
 	<!-- Enumerations -->
-	{{if .EnumType}}
+	{{$enums := AllEnums . true}}
+	{{if $enums}}
 		<div class="doc-enum-types">
 			<h1>Enums</h1>
-			{{range $e := .EnumType}}
+			{{range $e := $enums}}
 				<div class="doc-inner">
 					<h2 id="{{$e.Name}}">Enum: {{$e.Name}}</h2>
 					{{template "CommentsParagraph" $e}}
-					{{if .Value}}
+					{{if $e.Value}}
 						<table>
 							<tr><td>Name</td><td>Value</td><td>Description</td></tr>
 							{{range .Value}}
@@ -132,10 +133,11 @@
 	{{end}}
 
 	<!-- Messages -->
-	{{if .MessageType}}
+	{{$messages := AllMessages . true}}
+	{{if $messages}}
 		<div class="doc-message-types">
 			<h1>Messages</h1>
-			{{range $m := .MessageType}}
+			{{range $m := $messages}}
 				<div class="doc-inner">
 					<h2 id="{{$m.Name}}">Message: {{$m.Name}}</h2>
 					{{template "CommentsParagraph" $m}}

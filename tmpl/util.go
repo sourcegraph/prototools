@@ -72,11 +72,13 @@ type tmplFuncs struct {
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
 	return map[string]interface{}{
-		"cleanLabel": f.cleanLabel,
-		"cleanType":  f.cleanType,
-		"fieldType":  f.fieldType,
-		"urlToType":  f.urlToType,
-		"location":   f.location,
+		"cleanLabel":  f.cleanLabel,
+		"cleanType":   f.cleanType,
+		"fieldType":   f.fieldType,
+		"urlToType":   f.urlToType,
+		"location":    f.location,
+		"AllMessages": util.AllMessages,
+		"AllEnums":    util.AllEnums,
 	}
 }
 
