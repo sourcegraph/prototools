@@ -33,7 +33,7 @@ type Generator struct {
 // If any error is encountered during generation, it is returned and should be
 // considered fatal to the generation process (the response will be nil).
 func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err error) {
-	// Reset the response to it's initial state.
+	// Reset the response to its initial state.
 	g.response.Reset()
 
 	// Determine the extension string.
@@ -45,10 +45,12 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	// Generate each proto file:
 	errs := new(bytes.Buffer)
 	buf := new(bytes.Buffer)
-	for _, f := range g.Request.GetProtoFile() {
+	protoFile := g.Request.GetProtoFile()
+	for _, f := range protoFile {
 		ctx := &tmplFuncs{
-			f:   f,
-			ext: ext,
+			f:         f,
+			ext:       ext,
+			protoFile: protoFile,
 		}
 
 		// Execute the template and generate a response for the input file.

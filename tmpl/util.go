@@ -62,8 +62,9 @@ type cacheItem struct {
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
 type tmplFuncs struct {
-	f   *descriptor.FileDescriptorProto
-	ext string
+	f         *descriptor.FileDescriptorProto
+	ext       string
+	protoFile []*descriptor.FileDescriptorProto
 
 	locCache []cacheItem
 }
@@ -71,12 +72,11 @@ type tmplFuncs struct {
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
 	return map[string]interface{}{
-		"cleanLabel":     f.cleanLabel,
-		"cleanType":      f.cleanType,
-		"fieldType":      f.fieldType,
-		"urlToType":      f.urlToType,
-		"fullyQualified": f.fullyQualified,
-		"location":       f.location,
+		"cleanLabel": f.cleanLabel,
+		"cleanType":  f.cleanType,
+		"fieldType":  f.fieldType,
+		"urlToType":  f.urlToType,
+		"location":   f.location,
 	}
 }
 
@@ -114,15 +114,28 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 // urlToType returns a URL to the documentation file for the given type. The
 // input type path can be either fully-qualified or not, regardless, the URL
 // returned will always have a fully-qualified hash.
-func (f *tmplFuncs) urlToType(typePath string) string {
-	typePath = f.fullyQualified(typePath)
+//
+// TODO(slimsag): have the template pass in the relative type instead of nil,
+// so that relative symbol paths work.
+func (f *tmplFuncs) urlToType(symbolPath string) string {
+	if !util.IsFullyQualified(symbolPath) {
+		panic("urlToType: not a fully-qualified symbol path")
+	}
 
 	// Resolve the package path for the type.
-	pkg := strings.Split(typePath, ".")[1]
-	pkgPath := f.resolvePkgPath(pkg)
-	if pkgPath == "" {
+	file := util.NewResolver(f.protoFile).ResolveFile(symbolPath, nil)
+	if file == nil {
 		return ""
 	}
+	pkgPath := file.GetName()
+
+	// Remove the package prefix from types, for example:
+	//
+	//  pkg.html#.pkg.Type.SubType
+	//  ->
+	//  pkg.html#Type.SubType
+	//
+	typePath := util.TrimElem(symbolPath, util.CountElem(file.GetPackage()))
 
 	// Make the path relative to this documentation files directory and then swap
 	// the extension out.
@@ -132,24 +145,7 @@ func (f *tmplFuncs) urlToType(typePath string) string {
 	return fmt.Sprintf("%s#%s", rel, typePath)
 }
 
-// fullyQualified returns the fully qualified path for the given type path.
-//
-// TODO(slimsag): this is incomplete as it assumes the scope is only relative
-// to the package, i.e. for ".foo.bar.baz" fullyQualified("baz") would return
-// ".foo.baz" incorrectly. Handling such cases requires more extensive C++
-// style scope crawling.
-func (f *tmplFuncs) fullyQualified(typePath string) string {
-	if typePath[0] == '.' {
-		return typePath
-	}
-
-	// Not fully-qualified.
-	pkg := stripExt(filepath.Base(*f.f.Name))
-	return fmt.Sprintf(".%s.%s", pkg, typePath)
-}
-
-// resolvePkgPath resolves the named protobuf package, returning it's file
-// path.
+// resolvePkgPath resolves the named protobuf package, returning its file path.
 //
 // TODO(slimsag): This function assumes that the package ("package foo;") is
 // named identically to its file name ("foo.proto"). Protoc doesn't pass such
