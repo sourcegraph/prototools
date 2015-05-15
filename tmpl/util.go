@@ -62,8 +62,9 @@ type cacheItem struct {
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
 type tmplFuncs struct {
-	f   *descriptor.FileDescriptorProto
-	ext string
+	f         *descriptor.FileDescriptorProto
+	ext       string
+	protoFile []*descriptor.FileDescriptorProto
 
 	locCache []cacheItem
 }
@@ -114,15 +115,31 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 // urlToType returns a URL to the documentation file for the given type. The
 // input type path can be either fully-qualified or not, regardless, the URL
 // returned will always have a fully-qualified hash.
-func (f *tmplFuncs) urlToType(typePath string) string {
-	typePath = f.fullyQualified(typePath)
+//
+// TODO(slimsag): have the template pass in the relative type instead of nil,
+// so that relative symbol paths work.
+func (f *tmplFuncs) urlToType(symbolPath string) string {
+	if !util.IsFullyQualified(symbolPath) {
+		panic("urlToType: not a fully-qualified symbol path")
+	}
 
 	// Resolve the package path for the type.
-	pkg := strings.Split(typePath, ".")[1]
-	pkgPath := f.resolvePkgPath(pkg)
-	if pkgPath == "" {
+	file := util.NewResolver(f.protoFile).ResolveFile(symbolPath, nil)
+	if file == nil {
 		return ""
 	}
+	pkgPath := file.GetName()
+
+	// TODO(slimsag): Remove the package prefix from types, for example:
+	//
+	//  pkg.html#.pkg.Type.SubType
+	//  ->
+	//  pkg.html#Type.SubType
+	//
+	// This requires changes to how the IDs for those are generated in
+	// the HTML elsewhere.
+	//typePath := util.TrimElem(symbolPath, util.CountElem(file.GetPackage()))
+	typePath := symbolPath
 
 	// Make the path relative to this documentation files directory and then swap
 	// the extension out.

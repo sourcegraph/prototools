@@ -45,10 +45,12 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	// Generate each proto file:
 	errs := new(bytes.Buffer)
 	buf := new(bytes.Buffer)
-	for _, f := range g.Request.GetProtoFile() {
+	protoFile := g.Request.GetProtoFile()
+	for _, f := range protoFile {
 		ctx := &tmplFuncs{
-			f:   f,
-			ext: ext,
+			f:         f,
+			ext:       ext,
+			protoFile: protoFile,
 		}
 
 		// Execute the template and generate a response for the input file.
