@@ -72,12 +72,11 @@ type tmplFuncs struct {
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
 	return map[string]interface{}{
-		"cleanLabel":     f.cleanLabel,
-		"cleanType":      f.cleanType,
-		"fieldType":      f.fieldType,
-		"urlToType":      f.urlToType,
-		"fullyQualified": f.fullyQualified,
-		"location":       f.location,
+		"cleanLabel": f.cleanLabel,
+		"cleanType":  f.cleanType,
+		"fieldType":  f.fieldType,
+		"urlToType":  f.urlToType,
+		"location":   f.location,
 	}
 }
 
@@ -130,16 +129,13 @@ func (f *tmplFuncs) urlToType(symbolPath string) string {
 	}
 	pkgPath := file.GetName()
 
-	// TODO(slimsag): Remove the package prefix from types, for example:
+	// Remove the package prefix from types, for example:
 	//
 	//  pkg.html#.pkg.Type.SubType
 	//  ->
 	//  pkg.html#Type.SubType
 	//
-	// This requires changes to how the IDs for those are generated in
-	// the HTML elsewhere.
-	//typePath := util.TrimElem(symbolPath, util.CountElem(file.GetPackage()))
-	typePath := symbolPath
+	typePath := util.TrimElem(symbolPath, util.CountElem(file.GetPackage()))
 
 	// Make the path relative to this documentation files directory and then swap
 	// the extension out.
@@ -147,22 +143,6 @@ func (f *tmplFuncs) urlToType(symbolPath string) string {
 	rel, _ := filepath.Rel(basePath, pkgPath)
 	rel = stripExt(rel) + f.ext
 	return fmt.Sprintf("%s#%s", rel, typePath)
-}
-
-// fullyQualified returns the fully qualified path for the given type path.
-//
-// TODO(slimsag): this is incomplete as it assumes the scope is only relative
-// to the package, i.e. for ".foo.bar.baz" fullyQualified("baz") would return
-// ".foo.baz" incorrectly. Handling such cases requires more extensive C++
-// style scope crawling.
-func (f *tmplFuncs) fullyQualified(typePath string) string {
-	if typePath[0] == '.' {
-		return typePath
-	}
-
-	// Not fully-qualified.
-	pkg := stripExt(filepath.Base(*f.f.Name))
-	return fmt.Sprintf(".%s.%s", pkg, typePath)
 }
 
 // resolvePkgPath resolves the named protobuf package, returning it's file
