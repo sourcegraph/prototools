@@ -47,7 +47,7 @@
 	<h1>{{.Package}}</h1>
 	<div class="doc-inner">
 		<p>
-			<code>{{.Name}}</code> (syntax: <code>{{.Syntax}}</code>)
+			<code>{{.Name}}</code> (syntax: <code>{{with .Syntax}}{{.}}{{else}}proto2{{end}}</code>)
 		</p>
 	</div>
 
