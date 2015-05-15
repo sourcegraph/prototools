@@ -2,6 +2,8 @@
 package util // import "sourcegraph.com/sourcegraph/prototools/util"
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"path"
 	"strings"
 
@@ -158,4 +160,22 @@ func PackageName(f *descriptor.FileDescriptorProto) string {
 	// protobuf only speaks in unix path terms).
 	pkg := path.Base(f.GetName())
 	return strings.TrimSuffix(pkg, path.Ext(pkg))
+}
+
+// ReadJSONFile opens and unmarshals the JSON dump file from the protoc-gen-json
+// plugin, returning any error that occurs.
+func ReadJSONFile(path string) (*plugin.CodeGeneratorRequest, error) {
+	// Read the file.
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the request.
+	r := &plugin.CodeGeneratorRequest{}
+	err = json.Unmarshal(data, r)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
