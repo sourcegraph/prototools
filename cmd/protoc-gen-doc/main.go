@@ -71,6 +71,16 @@ func main() {
 		tmplPath = PathDir("src/sourcegraph.com/sourcegraph/prototools/templates/tmpl.html")
 	}
 
+	// Determine the root directory.
+	if v, ok := params["root"]; ok {
+		g.RootDir = v
+	} else {
+		g.RootDir, err = os.Getwd()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	// Load up the template, preloading the function map (or else the functions
 	// will fail when called).
 	t := template.New("").Funcs(tmpl.Preload)

@@ -29,9 +29,10 @@ Would produce documentation for `file.proto` inside the `doc/` directory using t
 
 ## Options
 
-| Option     | Default               | Description                                                        |
-|------------|-----------------------|--------------------------------------------------------------------|
-| `template` | `templates/tmpl.html` | Input `.html` `text/template` template file to use for generation. |
+| Option     | Default                     | Description                                                        |
+|------------|-----------------------------|--------------------------------------------------------------------|
+| `template` | `templates/tmpl.html`       | Input `.html` `text/template` template file to use for generation. |
+| `root`     | (current working directory) | Root directory path to prefix all generated URLs with.             |
 
 ## Issues
 
