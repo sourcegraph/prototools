@@ -3,6 +3,7 @@ package tmpl
 import (
 	"fmt"
 	"html/template"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -62,9 +63,9 @@ type cacheItem struct {
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
 type tmplFuncs struct {
-	f         *descriptor.FileDescriptorProto
-	ext       string
-	protoFile []*descriptor.FileDescriptorProto
+	f            *descriptor.FileDescriptorProto
+	ext, rootDir string
+	protoFile    []*descriptor.FileDescriptorProto
 
 	locCache []cacheItem
 }
@@ -139,12 +140,11 @@ func (f *tmplFuncs) urlToType(symbolPath string) string {
 	//
 	typePath := util.TrimElem(symbolPath, util.CountElem(file.GetPackage()))
 
-	// Make the path relative to this documentation files directory and then swap
-	// the extension out.
-	basePath := filepath.Dir(*f.f.Name)
-	rel, _ := filepath.Rel(basePath, pkgPath)
-	rel = stripExt(rel) + f.ext
-	return fmt.Sprintf("%s#%s", rel, typePath)
+	// Prefix the absolute path with the root directory and swap the extension out
+	// with the correct one.
+	p := stripExt(pkgPath) + f.ext
+	p = path.Join(f.rootDir, p)
+	return fmt.Sprintf("%s#%s", p, typePath)
 }
 
 // resolvePkgPath resolves the named protobuf package, returning its file path.

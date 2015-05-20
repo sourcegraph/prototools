@@ -23,6 +23,10 @@ type Generator struct {
 	// empty string, the extension of the first template file is used.
 	Extension string
 
+	// RootDir is the root directory path prefix to place onto URLs for generated
+	// types.
+	RootDir string
+
 	// Response to protoc compiler.
 	response *plugin.CodeGeneratorResponse
 }
@@ -50,6 +54,7 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 		ctx := &tmplFuncs{
 			f:         f,
 			ext:       ext,
+			rootDir:   g.RootDir,
 			protoFile: protoFile,
 		}
 
