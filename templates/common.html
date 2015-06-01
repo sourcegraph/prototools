@@ -1,0 +1,53 @@
+{{define "Comments"}}
+	{{$l := location .}}
+	{{if $l}}
+		{{if or $l.LeadingComments $l.TrailingComments}}
+			{{with $l.LeadingComments}}{{.}}{{end}}
+			{{with $l.TrailingComments}}{{.}}{{end}}
+		{{end}}
+	{{end}}
+{{end}}
+
+{{define "CommentsParagraph"}}
+	{{$l := location .}}
+	{{if $l}}
+		{{if or $l.LeadingComments $l.TrailingComments}}
+			<p class="description">Description:&nbsp;
+					{{with $l.LeadingComments}}{{.}}{{end}}
+					{{with $l.TrailingComments}}{{.}}{{end}}
+			</p>
+		{{end}}
+	{{end}}
+{{end}}
+
+{{define "Package"}}
+    <h1>{{.Package}}</h1>
+    <div class="doc-inner">
+        <p>
+            <code>{{.Name}}</code> (syntax: <code>{{with .Syntax}}{{.}}{{else}}proto2{{end}}</code>)
+        </p>
+    </div>
+{{end}}
+
+<style>
+.doc table, .doc tr, .doc td, .doc th {
+	margin: 0;
+	padding: 0;
+	border-collapse: collapse;
+}
+
+.doc table {
+	margin-left: 1em;
+}
+
+.doc td {
+	padding: 1em;
+	padding-top: .3em;
+	padding-bottom: .3em;
+	border-bottom: 1px solid black;
+}
+
+.doc-inner {
+	margin-left: 1em;
+}
+</style>

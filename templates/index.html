@@ -1,0 +1,8 @@
+{{$last := (len .ProtoFile)}}
+{{$last := sub $last 1}}
+
+{{with index .ProtoFile $last}}
+    <h1>{{.Package}} Protocol</h1>
+    <p>Generated documentation for the {{.Package}} protocol.</p>
+    <p><a href="{{trimExt .Name}}.html">View the documentation</a></p>
+{{end}}
