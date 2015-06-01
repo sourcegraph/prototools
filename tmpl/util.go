@@ -1,6 +1,7 @@
 package tmpl
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"path"
@@ -12,23 +13,6 @@ import (
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"sourcegraph.com/sourcegraph/prototools/util"
 )
-
-// findExt iterates through the templates and finds the first file extension it
-// can, or returns an empty string if none is found. It should be invoked
-// initially with g.Template
-func findExt(t *template.Template) string {
-	// First this template itself.
-	if ext := filepath.Ext(t.Name()); len(ext) > 0 {
-		return ext
-	}
-	// And then the associated templates, recursively.
-	for _, tmpl := range t.Templates() {
-		if ext := findExt(tmpl); len(ext) > 0 {
-			return ext
-		}
-	}
-	return ""
-}
 
 // unixPath takes a path, cleans it, and replaces any windows separators (\\)
 // with unix ones (/). This is needed because plugin.CodeGeneratorResponse_File
@@ -63,9 +47,9 @@ type cacheItem struct {
 // the FuncMap above for these to be called properly (as they are actually
 // closures with context).
 type tmplFuncs struct {
-	f            *descriptor.FileDescriptorProto
-	ext, rootDir string
-	protoFile    []*descriptor.FileDescriptorProto
+	f                   *descriptor.FileDescriptorProto
+	outputFile, rootDir string
+	protoFile           []*descriptor.FileDescriptorProto
 
 	locCache []cacheItem
 }
@@ -73,13 +57,26 @@ type tmplFuncs struct {
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
 	return map[string]interface{}{
-		"cleanLabel":  f.cleanLabel,
-		"cleanType":   f.cleanType,
-		"fieldType":   f.fieldType,
-		"urlToType":   f.urlToType,
-		"location":    f.location,
-		"AllMessages": util.AllMessages,
-		"AllEnums":    util.AllEnums,
+		"cleanLabel": f.cleanLabel,
+		"cleanType":  f.cleanType,
+		"fieldType":  f.fieldType,
+		"dict":       f.dict,
+		"ext":        filepath.Ext,
+		"dir": func(s string) string {
+			dir, _ := path.Split(s)
+			return dir
+		},
+		"trimExt":   stripExt,
+		"sub":       f.sub,
+		"filepath":  f.filepath,
+		"urlToType": f.urlToType,
+		"location":  f.location,
+		"AllMessages": func(fixNames bool) []*descriptor.DescriptorProto {
+			return util.AllMessages(f.f, fixNames)
+		},
+		"AllEnums": func(fixNames bool) []*descriptor.EnumDescriptorProto {
+			return util.AllEnums(f.f, fixNames)
+		},
 	}
 }
 
@@ -114,6 +111,27 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 	return util.FieldTypeName(field.Type)
 }
 
+// dict builds a map of paired items, allowing you to invoke a template with
+// multiple parameters.
+func (f *tmplFuncs) dict(pairs ...interface{}) (map[string]interface{}, error) {
+	if len(pairs)%2 != 0 {
+		return nil, errors.New("expected pairs")
+	}
+	m := make(map[string]interface{}, len(pairs)/2)
+	for i := 0; i < len(pairs); i += 2 {
+		m[pairs[i].(string)] = pairs[i+1]
+	}
+	return m, nil
+}
+
+// sub performs simple x-y subtraction on integers.
+func (f *tmplFuncs) sub(x, y int) int { return x - y }
+
+// filepath returns the output filepath (prefixed by the root directory).
+func (f *tmplFuncs) filepath() string {
+	return path.Join(f.rootDir, f.outputFile)
+}
+
 // urlToType returns a URL to the documentation file for the given type. The
 // input type path can be either fully-qualified or not, regardless, the URL
 // returned will always have a fully-qualified hash.
@@ -142,7 +160,7 @@ func (f *tmplFuncs) urlToType(symbolPath string) string {
 
 	// Prefix the absolute path with the root directory and swap the extension out
 	// with the correct one.
-	p := stripExt(pkgPath) + f.ext
+	p := stripExt(pkgPath) + path.Ext(f.outputFile)
 	p = path.Join(f.rootDir, p)
 	return fmt.Sprintf("%s#%s", p, typePath)
 }
