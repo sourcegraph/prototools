@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"path"
 
+	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
@@ -25,6 +26,12 @@ type Generator struct {
 	// RootDir is the root directory path prefix to place onto URLs for generated
 	// types.
 	RootDir string
+
+	// APIHost is the base URL to use for rendering grpc-gateway routes, e.g.:
+	//
+	//  http://api.mysite.com/
+	//
+	APIHost string
 
 	// Response to protoc compiler.
 	response *plugin.CodeGeneratorResponse
@@ -66,6 +73,12 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	// Reset the response to its initial state.
 	g.response.Reset()
 
+	// Create a grpc-gateway registry.
+	reg := gateway.NewRegistry()
+	if err := reg.Load(g.Request); err != nil {
+		return nil, err
+	}
+
 	// Generate each proto file:
 	errs := new(bytes.Buffer)
 	buf := new(bytes.Buffer)
@@ -93,15 +106,19 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 				outputFile: gen.Output,
 				rootDir:    g.RootDir,
 				protoFile:  protoFile,
+				registry:   reg,
+				apiHost:    g.APIHost,
 			}
 			err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
 				*descriptor.FileDescriptorProto
 				Generate *FileMapGenerate
 				Data     map[string]string
+				Request  *plugin.CodeGeneratorRequest
 			}{
 				f,
 				gen,
 				gen.DataMap(),
+				g.Request,
 			})
 			if err != nil {
 				fmt.Fprintf(errs, "%s\n", err)
@@ -138,6 +155,8 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 		ctx := &tmplFuncs{
 			outputFile: gen.Output,
 			rootDir:    g.RootDir,
+			registry:   reg,
+			apiHost:    g.APIHost,
 		}
 		err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
 			*plugin.CodeGeneratorRequest

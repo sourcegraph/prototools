@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/httprule"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"sourcegraph.com/sourcegraph/prototools/util"
 )
@@ -50,6 +52,8 @@ type tmplFuncs struct {
 	f                   *descriptor.FileDescriptorProto
 	outputFile, rootDir string
 	protoFile           []*descriptor.FileDescriptorProto
+	registry            *gateway.Registry
+	apiHost             string
 
 	locCache []cacheItem
 }
@@ -66,11 +70,14 @@ func (f *tmplFuncs) funcMap() template.FuncMap {
 			dir, _ := path.Split(s)
 			return dir
 		},
-		"trimExt":   stripExt,
-		"sub":       f.sub,
-		"filepath":  f.filepath,
-		"urlToType": f.urlToType,
-		"location":  f.location,
+		"trimExt":       stripExt,
+		"sub":           f.sub,
+		"filepath":      f.filepath,
+		"gatewayMethod": f.gatewayMethod,
+		"gatewayPath":   f.gatewayPath,
+		"urlToType":     f.urlToType,
+		"jsonMessage":   f.jsonMessage,
+		"location":      f.location,
 		"AllMessages": func(fixNames bool) []*descriptor.DescriptorProto {
 			return util.AllMessages(f.f, fixNames)
 		},
@@ -130,6 +137,44 @@ func (f *tmplFuncs) sub(x, y int) int { return x - y }
 // filepath returns the output filepath (prefixed by the root directory).
 func (f *tmplFuncs) filepath() string {
 	return path.Join(f.rootDir, f.outputFile)
+}
+
+// gatewayMethod returns the grpc-gateway method for a given service method.
+func (f *tmplFuncs) gatewayMethod(target *descriptor.MethodDescriptorProto) (*gateway.Method, error) {
+	file, err := f.registry.LookupFile(f.f.GetName())
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range file.Services {
+		for _, m := range s.Methods {
+			if m.MethodDescriptorProto == target {
+				return m, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
+// gatewayPath renders the given grpc-gateway HTTP rule template (i.e. the HTTP
+// route to be bound). The method parameter is used to insert a link to the
+// method type for any HTTP fields (which will be marked clearly in "{text}").
+//
+// The returned string will always be prefixed by the APIHost string.
+func (f *tmplFuncs) gatewayPath(r *httprule.Template, method *descriptor.MethodDescriptorProto) template.HTML {
+	var final string
+pool:
+	for _, pathElem := range r.Pool {
+		for _, fieldName := range r.Fields {
+			if pathElem != fieldName {
+				continue
+			}
+			u := fmt.Sprintf(`<a href="%s">{%s}</a>`, f.urlToType(method.GetInputType()), pathElem)
+			final = path.Join(final, u)
+			continue pool
+		}
+		final = path.Join(final, pathElem)
+	}
+	return template.HTML(f.apiHost + final)
 }
 
 // urlToType returns a URL to the documentation file for the given type. The
