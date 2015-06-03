@@ -98,7 +98,7 @@ func TestPackageName(t *testing.T) {
 		Package: proto.String("foo"),
 	})
 	if got != "foo" {
-		t.Fatal("expected explicit package name \"foo\", got %q\n", got)
+		t.Fatalf("expected explicit package name \"foo\", got %q\n", got)
 	}
 
 	got = PackageName(&descriptor.FileDescriptorProto{
