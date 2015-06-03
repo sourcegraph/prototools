@@ -134,6 +134,11 @@ func main() {
 		}
 	}
 
+	// Map the API host, if any.
+	if v, ok := params["apihost"]; ok {
+		g.APIHost = v
+	}
+
 	// Perform generation.
 	response, err := g.Generate()
 	if err != nil {
