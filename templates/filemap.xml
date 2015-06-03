@@ -1,0 +1,32 @@
+<FileMap>
+    <!-- Index page -->
+    <Generate>
+        <Template>index.html</Template>
+        <Output>index.html</Output>
+    </Generate>
+
+{{$templatePath := "tmpl.html"}}
+{{$serviceTemplate := "service.html"}}
+{{range $f := .ProtoFile}}
+    <!-- Main page for each proto file -->
+    <Generate>
+        <Template>{{$templatePath}}</Template>
+        <Target>{{$f.Name}}</Target>
+        <Output>{{trimExt $f.Name}}{{ext $templatePath}}</Output>
+        <Includes><Include>common.html</Include></Includes>
+    </Generate>
+
+    <!-- Page for each service in proto file -->
+    {{range $s := .Service}}
+        <Generate>
+            <Template>{{$serviceTemplate}}</Template>
+            <Target>{{$f.Name}}</Target>
+            <Output>{{dir $f.Name}}/{{$s.Name}}{{ext $serviceTemplate}}</Output>
+            <Includes><Include>common.html</Include></Includes>
+            <Data>
+                <Item><Key>Service</Key><Value>{{$s.Name}}</Value></Item>
+            </Data>
+        </Generate>
+    {{end}}
+{{end}}
+</FileMap>

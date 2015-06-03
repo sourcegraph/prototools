@@ -1,0 +1,29 @@
+{{template "common.html"}}
+
+<div class="doc">
+	{{template "Package" .}}
+
+	<div class="doc-inner">
+		{{range $s := .Service}}
+			{{if eq $s.GetName $.Data.Service}}
+				<h1>{{$s.Name}}</h1>
+				{{template "CommentsParagraph" $s}}
+				<table>
+					<tr><td>Method</td><td>Input Type</td><td>Output Type</td><td>Description</td></tr>
+					{{range $s.Method}}
+						<tr>
+							<td>{{.Name}}
+								{{if .ClientStreaming}}*Client-Streaming {{end}}
+								{{if .ServerStreaming}}*Server-Streaming {{end}}
+								{{if .Options}}{{if .Options.Deprecated}}*Deprecated{{end}}{{end}}
+							</td>
+							<td><a href="{{urlToType .InputType}}">{{cleanType .InputType}}</a></td>
+							<td><a href="{{urlToType .OutputType}}">{{cleanType .OutputType}}</a></td>
+							<td>{{template "Comments" .}}</td>
+						</tr>
+					{{end}}
+				</table>
+			{{end}}
+		{{end}}
+	</div>
+</div>

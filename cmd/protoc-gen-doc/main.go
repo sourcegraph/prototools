@@ -12,8 +12,9 @@ package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-do
 
 import (
 	"bytes"
+	"encoding/xml"
+	"fmt"
 	"go/build"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -39,6 +40,19 @@ func PathDir(relPath string) string {
 	return relPath
 }
 
+var basicFileMap = `
+<FileMap>
+{{$templatePath := "%s"}}
+{{range .ProtoFile}}
+    <Generate>
+        <Template>{{$templatePath}}</Template>
+        <Target>{{.Name}}</Target>
+        <Output>{{trimExt .Name}}{{ext $templatePath}}</Output>
+    </Generate>
+{{end}}
+</FileMap>
+`
+
 func main() {
 	// Configure logging.
 	log.SetFlags(0)
@@ -61,14 +75,53 @@ func main() {
 		log.Fatal(err, ": no input files")
 	}
 
-	// Parse the command-line parameters and determine the correct template file
-	// to execute.
+	// Verify the command-line parameters.
 	params := util.ParseParams(g.Request)
-	var tmplPath string
-	if v, ok := params["template"]; ok {
-		tmplPath = v
+	paramTemplate, haveTemplate := params["template"]
+	paramFileMap, haveFileMap := params["filemap"]
+	if haveTemplate && haveFileMap {
+		log.Fatal("expected either template or filemap argument, not both")
+	}
+
+	// Build the filemap based on the command-line parameters.
+	var fileMapDir, fileMapData string
+	if haveTemplate {
+		// Use the specified template file once on each input proto file.
+		fileMapData = fmt.Sprintf(basicFileMap, paramTemplate)
+	} else if haveFileMap {
+		// Load the filemap template.
+		data, err := ioutil.ReadFile(paramFileMap)
+		if err != nil {
+			log.Fatal(err, ": failed to read file map")
+		}
+		fileMapData = string(data)
+		fileMapDir = filepath.Dir(paramFileMap)
 	} else {
-		tmplPath = PathDir("src/sourcegraph.com/sourcegraph/prototools/templates/tmpl.html")
+		// Use the default filemap template once on each input proto file.
+		def := PathDir("src/sourcegraph.com/sourcegraph/prototools/templates/tmpl.html")
+		fileMapData = fmt.Sprintf(basicFileMap, def)
+		fileMapDir = filepath.Dir(def)
+	}
+
+	// Parse the file map template.
+	if err = g.ParseFileMap(fileMapDir, fileMapData); err != nil {
+		log.Fatal(err, ": failed to parse file map")
+	}
+
+	// Dump the execute filemap template, if desired.
+	if v, ok := params["dump-filemap"]; ok {
+		f, err := os.Create(v)
+		if err != nil {
+			log.Fatal(err, ": failed to crate dump file")
+		}
+		dump, err := xml.MarshalIndent(g.FileMap, "", "    ")
+		if err != nil {
+			log.Fatal(err, ": failed to marshal filemap")
+		}
+		_, err = io.Copy(f, bytes.NewReader(dump))
+		if err != nil {
+			log.Fatal(err, ": failed to write dump file")
+		}
 	}
 
 	// Determine the root directory.
@@ -80,15 +133,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-
-	// Load up the template, preloading the function map (or else the functions
-	// will fail when called).
-	t := template.New("").Funcs(tmpl.Preload)
-	g.Template, err = t.ParseGlob(tmplPath)
-	if err != nil {
-		log.Fatal(err, ": failed to parse templates")
-	}
-	g.Template = g.Template.Lookup(filepath.Base(tmplPath))
 
 	// Perform generation.
 	response, err := g.Generate()

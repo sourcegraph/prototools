@@ -1,55 +1,7 @@
-{{define "Comments"}}
-	{{$l := location .}}
-	{{if $l}}
-		{{if or $l.LeadingComments $l.TrailingComments}}
-			{{with $l.LeadingComments}}{{.}}{{end}}
-			{{with $l.TrailingComments}}{{.}}{{end}}
-		{{end}}
-	{{end}}
-{{end}}
-
-{{define "CommentsParagraph"}}
-	{{$l := location .}}
-	{{if $l}}
-		{{if or $l.LeadingComments $l.TrailingComments}}
-			<p class="description">Description:&nbsp;
-					{{with $l.LeadingComments}}{{.}}{{end}}
-					{{with $l.TrailingComments}}{{.}}{{end}}
-			</p>
-		{{end}}
-	{{end}}
-{{end}}
-
-<style>
-.doc table, .doc tr, .doc td, .doc th {
-	margin: 0;
-	padding: 0;
-	border-collapse: collapse;
-}
-
-.doc table {
-	margin-left: 1em;
-}
-
-.doc td {
-	padding: 1em;
-	padding-top: .3em;
-	padding-bottom: .3em;
-	border-bottom: 1px solid black;
-}
-
-.doc-inner {
-	margin-left: 1em;
-}
-</style>
+{{template "common.html"}}
 
 <div class="doc">
-	<h1>{{.Package}}</h1>
-	<div class="doc-inner">
-		<p>
-			<code>{{.Name}}</code> (syntax: <code>{{with .Syntax}}{{.}}{{else}}proto2{{end}}</code>)
-		</p>
-	</div>
+	{{template "Package" .}}
 
 	<!-- Dependencies -->
 	{{if .Dependency}}
@@ -66,7 +18,7 @@
 	{{end}}
 
 	<!-- Enumerations -->
-	{{$enums := AllEnums . true}}
+	{{$enums := AllEnums true}}
 	{{if $enums}}
 		<div class="doc-enum-types">
 			<h1>Enums</h1>
@@ -110,30 +62,14 @@
 			<h1>Services</h1>
 			{{range $s := .Service}}
 				<div class="doc-inner">
-					<h2 id="{{$s.Name}}">Service: {{$s.Name}}</h2>
-					{{template "CommentsParagraph" $s}}
-					<table>
-						<tr><td>Method</td><td>Input Type</td><td>Output Type</td><td>Description</td></tr>
-						{{range $s.Method}}
-							<tr>
-								<td>{{.Name}}
-									{{if .ClientStreaming}}*Client-Streaming {{end}}
-									{{if .ServerStreaming}}*Server-Streaming {{end}}
-									{{if .Options}}{{if .Options.Deprecated}}*Deprecated{{end}}{{end}}
-								</td>
-								<td><a href="{{urlToType .InputType}}">{{cleanType .InputType}}</a></td>
-								<td><a href="{{urlToType .OutputType}}">{{cleanType .OutputType}}</a></td>
-								<td>{{template "Comments" .}}</td>
-							</tr>
-						{{end}}
-					</table>
+					<h2 id="{{$s.Name}}">Service: <a href="{{$s.Name}}.html">{{$s.Name}}</a></h2>
 				</div>
 			{{end}}
 		</div>
 	{{end}}
 
 	<!-- Messages -->
-	{{$messages := AllMessages . true}}
+	{{$messages := AllMessages true}}
 	{{if $messages}}
 		<div class="doc-message-types">
 			<h1>Messages</h1>
