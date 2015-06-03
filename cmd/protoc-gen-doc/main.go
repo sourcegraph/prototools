@@ -40,6 +40,16 @@ func PathDir(relPath string) string {
 	return relPath
 }
 
+// extendParams extends the given parameter map with the second one.
+func extendParams(params, second map[string]string) map[string]string {
+	for k, v := range second {
+		if _, ok := params[k]; !ok {
+			params[k] = v
+		}
+	}
+	return params
+}
+
 var basicFileMap = `
 <FileMap>
 {{$templatePath := "%s"}}
@@ -77,6 +87,17 @@ func main() {
 
 	// Verify the command-line parameters.
 	params := util.ParseParams(g.Request)
+
+	// Handle configuration files.
+	if conf, ok := params["conf"]; ok {
+		confData, err := ioutil.ReadFile(conf)
+		if err != nil {
+			log.Fatal(err, ": could not read conf file")
+		}
+		g.Request.Parameter = proto.String(string(confData))
+		params = extendParams(params, util.ParseParams(g.Request))
+	}
+
 	paramTemplate, haveTemplate := params["template"]
 	paramFileMap, haveFileMap := params["filemap"]
 	if haveTemplate && haveFileMap {
