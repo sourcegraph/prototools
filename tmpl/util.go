@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 
 	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/httprule"
@@ -34,6 +35,16 @@ func stripExt(s string) string {
 		return s[:len(s)-len(ext)]
 	}
 	return s
+}
+
+// slug returns a simple slug string by making everything lowercase and
+// replacing anything no a unicode letter with a dash separator.
+func slug(s string) string {
+	s = strings.ToLower(s)
+	fields := strings.FieldsFunc(s, func(c rune) bool {
+		return !unicode.IsLetter(c)
+	})
+	return strings.Join(fields, "-")
 }
 
 var Preload = (&tmplFuncs{}).funcMap()
@@ -71,6 +82,7 @@ func (f *tmplFuncs) funcMap() template.FuncMap {
 			return dir
 		},
 		"trimExt":       stripExt,
+		"slug":          slug,
 		"sub":           f.sub,
 		"filepath":      f.filepath,
 		"gatewayMethod": f.gatewayMethod,
