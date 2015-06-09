@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"bufio"
+	"bytes"
 
 	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/httprule"
@@ -45,6 +47,50 @@ func slug(s string) string {
 		return !unicode.IsLetter(c)
 	})
 	return strings.Join(fields, "-")
+}
+
+// comments takes a string of comments that contain newlines, it merges all
+// newlines together except doubles (i.e. blank lines), and then returns
+// segments:
+//
+//   we like to\n
+//   keep width\n
+//   below 10\n
+//   \n
+//   but sometimes we go over\n
+//   \t   \n
+//   crazy, right?\n
+//
+// And returns it in segments of blank newlines:
+//
+//   "we like to keep width below 10"
+//   "but sometimes we go over"
+//   "crazy, right?"
+//
+func comments(c string) []string {
+	var(
+		scanner = bufio.NewScanner(bytes.NewBufferString(c))
+		segments []string
+		s []byte
+	)
+	for scanner.Scan() {
+		text := scanner.Text()
+		if len(s) > 0 && len(strings.TrimSpace(text)) == 0 {
+			// Blank line, we begin a new segment.
+			segments = append(segments, string(s))
+			s = s[:0]
+			continue
+		}
+		if len(s) > 0 {
+			s = append(s, ' ')
+		}
+		s = append(s, []byte(text)...)
+	}
+	// Handle the final segment if there is one.
+	if len(s) > 0 {
+		segments = append(segments, string(s))
+	}
+	return segments
 }
 
 var Preload = (&tmplFuncs{}).funcMap()
@@ -83,6 +129,7 @@ func (f *tmplFuncs) funcMap() template.FuncMap {
 		},
 		"trimExt":       stripExt,
 		"slug":          slug,
+		"comments":      comments,
 		"sub":           f.sub,
 		"filepath":      f.filepath,
 		"gatewayMethod": f.gatewayMethod,

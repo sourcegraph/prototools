@@ -29,3 +29,27 @@ func TestStripExt(t *testing.T) {
 		}
 	}
 }
+
+func TestComments(t *testing.T) {
+	var tests = map[string][]string{
+		"we like to\nkeep width\nbelow 10\n\nbut sometimes we go over\n\t   \ncrazy, right?\n": []string{
+			"we like to keep width below 10",
+			"but sometimes we go over",
+			"crazy, right?",
+		},
+		"one line": []string{"one line"},
+		"two\nlines": []string{"two lines"},
+		"\nbegin": []string{"begin"},
+	}
+	for input, want := range tests {
+		got := comments(input)
+		if len(got) != len(want) {
+			t.Fatalf("got %#q want %#q", got, want)
+		}
+		for i, w := range want {
+			if w != got[i] {
+				t.Fatalf("%d. got %q expected %q", i, got[i], w)
+			}
+		}
+	}
+}
