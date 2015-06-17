@@ -10,16 +10,13 @@ import (
 	"path"
 
 	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 // Generator is the type whose methods generate the output, stored in the associated response structure.
 type Generator struct {
-	// Request from protoc compiler, which should have data unmarshaled into it by
-	// the user of this package.
-	Request *plugin.CodeGeneratorRequest
-
 	// FileMap is the map of template files to use for the generation process.
 	FileMap FileMap
 
@@ -33,8 +30,15 @@ type Generator struct {
 	//
 	APIHost string
 
+	// request from protoc compiler, which should be set by the user of this
+	// package via the SetRequest method.
+	request *plugin.CodeGeneratorRequest
+
 	// Response to protoc compiler.
 	response *plugin.CodeGeneratorResponse
+
+	// grpc-gateway registry used to determine HTTP routes.
+	registry *gateway.Registry
 }
 
 // ParseFileMap parses and executes a filemap template.
@@ -47,7 +51,7 @@ func (g *Generator) ParseFileMap(dir, data string) error {
 
 	// Execute the template.
 	buf := bytes.NewBuffer(nil)
-	err = t.Execute(buf, g.Request)
+	err = t.Execute(buf, g.request)
 	if err != nil {
 		return err
 	}
@@ -73,111 +77,15 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	// Reset the response to its initial state.
 	g.response.Reset()
 
-	// Create a grpc-gateway registry.
-	reg := gateway.NewRegistry()
-	if err := reg.Load(g.Request); err != nil {
-		return nil, err
-	}
-
-	// Generate each proto file:
-	errs := new(bytes.Buffer)
-	buf := new(bytes.Buffer)
-	protoFile := g.Request.GetProtoFile()
-	for _, f := range protoFile {
-		for _, gen := range g.FileMap.Generate {
-			// Only running generators on proto files (i.e. generators with
-			// targets).
-			if gen.Target != f.GetName() {
-				continue
-			}
-
-			// Prepare the generators template.
-			tmpl, err := g.prepare(gen)
-			if err != nil {
-				fmt.Fprintf(errs, "%s\n", err)
-				continue
-			}
-
-			// Execute the template with this context and generate a response
-			// for the input file.
-			buf.Reset()
-			ctx := &tmplFuncs{
-				f:          f,
-				outputFile: gen.Output,
-				rootDir:    g.RootDir,
-				protoFile:  protoFile,
-				registry:   reg,
-				apiHost:    g.APIHost,
-			}
-			err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
-				*descriptor.FileDescriptorProto
-				Generate *FileMapGenerate
-				Data     map[string]string
-				Request  *plugin.CodeGeneratorRequest
-			}{
-				f,
-				gen,
-				gen.DataMap(),
-				g.Request,
-			})
-			if err != nil {
-				fmt.Fprintf(errs, "%s\n", err)
-				continue
-			}
-
-			// Generate the response file with the rendered template.
-			bufStr := buf.String()
-			g.response.File = append(g.response.File, &plugin.CodeGeneratorResponse_File{
-				Name:    &gen.Output,
-				Content: &bufStr,
-			})
-		}
-	}
-
-	// Execute target-less filemap generators (e.g. for index pages rather than
-	// individual doc pages).
+	// Execute each generator.
+	errs := bytes.NewBuffer(nil)
 	for _, gen := range g.FileMap.Generate {
-		// Only running generators not on proto files (i.e. generators without
-		// targets).
-		if len(gen.Target) != 0 {
-			continue
-		}
-
-		// Prepare the generators template.
-		tmpl, err := g.prepare(gen)
+		f, err := g.GenerateOutput(gen.Output, nil)
 		if err != nil {
 			fmt.Fprintf(errs, "%s\n", err)
 			continue
 		}
-
-		// Execute the template with this context and generate a response file.
-		buf.Reset()
-		ctx := &tmplFuncs{
-			outputFile: gen.Output,
-			rootDir:    g.RootDir,
-			registry:   reg,
-			apiHost:    g.APIHost,
-		}
-		err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
-			*plugin.CodeGeneratorRequest
-			Generate *FileMapGenerate
-			Data     map[string]string
-		}{
-			g.Request,
-			gen,
-			gen.DataMap(),
-		})
-		if err != nil {
-			fmt.Fprintf(errs, "%s\n", err)
-			continue
-		}
-
-		// Generate the response file with the rendered template.
-		bufStr := buf.String()
-		g.response.File = append(g.response.File, &plugin.CodeGeneratorResponse_File{
-			Name:    &gen.Output,
-			Content: &bufStr,
-		})
+		g.response.File = append(g.response.File, f)
 	}
 
 	if errs.Len() > 0 {
@@ -188,12 +96,153 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 	return g.response, nil
 }
 
+// GenerateOutput generates a CodeGeneratorResponse_File for the output file
+// name.
+//
+// The ctx parameter specifies an arbitrary context for which to execute the
+// template with, it is exposed to the executed template file as "Ctx".
+func (g *Generator) GenerateOutput(name string, ctx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+	// Find the generator with that output filename.
+	for _, gen := range g.FileMap.Generate {
+		if gen.Output != name {
+			continue
+		}
+
+		// Execute in whichever mode is correct.
+		if gen.Target != "" {
+			return g.genTarget(gen, ctx)
+		} else {
+			return g.genNoTarget(gen, ctx)
+		}
+	}
+
+	var outputs []string
+	for _, gen := range g.FileMap.Generate {
+		outputs = append(outputs, gen.Output)
+	}
+	return nil, fmt.Errorf("no such generator with output file %q\nvalid outputs are: %q", name, outputs)
+}
+
+// SetRequest sets the request the generator is generating a response for. If an
+// error is returned generation is not safe (the request is bad) until a
+// different request object is set successfully through this method.
+func (g *Generator) SetRequest(r *plugin.CodeGeneratorRequest) error {
+	g.request = r
+
+	// Load into the grpc-gateway registry.
+	return g.registry.Load(g.request)
+}
+
 // New returns a new generator for the given template.
 func New() *Generator {
 	return &Generator{
-		Request:  &plugin.CodeGeneratorRequest{},
+		request:  &plugin.CodeGeneratorRequest{},
 		response: &plugin.CodeGeneratorResponse{},
+		registry: gateway.NewRegistry(),
 	}
+}
+
+func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+	var (
+		buf       = bytes.NewBuffer(nil)
+		protoFile = g.request.GetProtoFile()
+		f         *descriptor.FileDescriptorProto
+	)
+
+	// Find the target proto file.
+	for _, v := range protoFile {
+		for _, gen := range g.FileMap.Generate {
+			if gen.Target == f.GetName() {
+				f = v
+				break
+			}
+		}
+	}
+
+	// Prepare the generators template.
+	tmpl, err := g.prepare(gen)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the template with this context and generate a response
+	// for the input file.
+	ctx := &tmplFuncs{
+		f:          f,
+		outputFile: gen.Output,
+		rootDir:    g.RootDir,
+		protoFile:  protoFile,
+		registry:   g.registry,
+		apiHost:    g.APIHost,
+	}
+	err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
+		*descriptor.FileDescriptorProto
+		Generate *FileMapGenerate
+		Data     map[string]string
+		Request  *plugin.CodeGeneratorRequest
+		Ctx      interface{}
+	}{
+		f,
+		gen,
+		gen.DataMap(),
+		g.request,
+		userCtx,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate the response file with the rendered template.
+	return &plugin.CodeGeneratorResponse_File{
+		Name:    proto.String(gen.Output),
+		Content: proto.String(buf.String()),
+	}, nil
+}
+
+// genNoTarget executes a target-less filemap generator (e.g. for index pages
+// rather than individual doc pages). It panics if gen.Target != "".
+func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+	buf := bytes.NewBuffer(nil)
+
+	// Only running generators not on proto files (i.e. generators without
+	// targets).
+	if gen.Target != "" {
+		panic("expected a generator without a target")
+	}
+
+	// Prepare the generators template.
+	tmpl, err := g.prepare(gen)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the template with this context and generate a response file.
+	ctx := &tmplFuncs{
+		outputFile: gen.Output,
+		rootDir:    g.RootDir,
+		registry:   g.registry,
+		apiHost:    g.APIHost,
+	}
+	err = tmpl.Funcs(ctx.funcMap()).Execute(buf, struct {
+		*plugin.CodeGeneratorRequest
+		Generate *FileMapGenerate
+		Data     map[string]string
+		Ctx      interface{}
+	}{
+		g.request,
+		gen,
+		gen.DataMap(),
+		userCtx,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Generate the response file with the rendered template.
+	return &plugin.CodeGeneratorResponse_File{
+		Name:    proto.String(gen.Output),
+		Content: proto.String(buf.String()),
+	}, nil
 }
 
 // prepare prepares the given filemap generators template for execution,
