@@ -1,6 +1,8 @@
 package tmpl
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -10,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"bufio"
-	"bytes"
 
 	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/httprule"
@@ -68,10 +68,10 @@ func slug(s string) string {
 //   "crazy, right?"
 //
 func comments(c string) []string {
-	var(
-		scanner = bufio.NewScanner(bytes.NewBufferString(c))
+	var (
+		scanner  = bufio.NewScanner(bytes.NewBufferString(c))
 		segments []string
-		s []byte
+		s        []byte
 	)
 	for scanner.Scan() {
 		text := scanner.Text()

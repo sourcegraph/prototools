@@ -37,9 +37,9 @@ func TestComments(t *testing.T) {
 			"but sometimes we go over",
 			"crazy, right?",
 		},
-		"one line": []string{"one line"},
+		"one line":   []string{"one line"},
 		"two\nlines": []string{"two lines"},
-		"\nbegin": []string{"begin"},
+		"\nbegin":    []string{"begin"},
 	}
 	for input, want := range tests {
 		got := comments(input)
