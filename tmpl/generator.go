@@ -142,6 +142,8 @@ func New() *Generator {
 	}
 }
 
+// genTarget a filemap generator with a specific target (e.g. for individual doc
+// pages).
 func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
 	var (
 		buf       = bytes.NewBuffer(nil)
