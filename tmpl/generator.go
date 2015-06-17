@@ -151,12 +151,13 @@ func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugi
 
 	// Find the target proto file.
 	for _, v := range protoFile {
-		for _, gen := range g.FileMap.Generate {
-			if gen.Target == f.GetName() {
-				f = v
-				break
-			}
+		if gen.Target == v.GetName() {
+			f = v
+			break
 		}
+	}
+	if f == nil {
+		return nil, fmt.Errorf("no input proto file for generator target %q", gen.Target)
 	}
 
 	// Prepare the generators template.
