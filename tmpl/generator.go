@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"path"
 
 	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
@@ -29,6 +30,10 @@ type Generator struct {
 	//  http://api.mysite.com/
 	//
 	APIHost string
+
+	// ReadFile if non-nil is used to read template files, otherwise
+	// ioutil.ReadFile is used.
+	ReadFile func(path string) ([]byte, error)
 
 	// request from protoc compiler, which should be set by the user of this
 	// package via the SetRequest method.
@@ -248,6 +253,29 @@ func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx interface{}) (*plu
 	}, nil
 }
 
+// loadTemplate is responsible for loading a single template and associating it
+// with t. It reads the template file from g.ReadFile as appropriate.
+func (g *Generator) loadTemplate(t *template.Template, tmplPath string) (*template.Template, error) {
+	// Make the filepath relative to the filemap.
+	tmplPath = g.FileMap.relative(tmplPath)[0]
+
+	// Determine the open function.
+	readFile := g.ReadFile
+	if readFile == nil {
+		readFile = ioutil.ReadFile
+	}
+
+	// Read the file.
+	data, err := readFile(tmplPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new template and parse.
+	_, name := path.Split(tmplPath)
+	return t.New(name).Parse(string(data))
+}
+
 // prepare prepares the given filemap generators template for execution,
 // handling parsing of both the relative-path templates and their includes.
 func (g *Generator) prepare(gen *FileMapGenerate) (*template.Template, error) {
@@ -259,20 +287,19 @@ func (g *Generator) prepare(gen *FileMapGenerate) (*template.Template, error) {
 	)
 
 	// Parse the included template files.
-	if len(gen.Include) > 0 {
-		t, err = t.ParseFiles(g.FileMap.relative(gen.Include...)...)
+	for _, inc := range gen.Include {
+		_, err := g.loadTemplate(t, inc)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Parse the template file to execute.
-	absTemplate := g.FileMap.relative(gen.Template)[0]
-	tmpl, err := t.ParseFiles(absTemplate)
+	tmpl, err := g.loadTemplate(t, gen.Template)
 	if err != nil {
 		return nil, err
 	}
-	_, name := path.Split(absTemplate)
+	_, name := path.Split(gen.Template)
 	tmpl = tmpl.Lookup(name)
 	return tmpl, nil
 }
