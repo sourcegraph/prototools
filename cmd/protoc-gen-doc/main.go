@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/golang/protobuf/proto"
+	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"sourcegraph.com/sourcegraph/prototools/tmpl"
 	"sourcegraph.com/sourcegraph/prototools/util"
 )
@@ -78,15 +79,19 @@ func main() {
 	}
 
 	// Unmarshal the protoc generation request.
-	if err := proto.Unmarshal(data, g.Request); err != nil {
+	var request *plugin.CodeGeneratorRequest
+	if err := proto.Unmarshal(data, request); err != nil {
 		log.Fatal(err, ": failed to parse input proto")
 	}
-	if len(g.Request.FileToGenerate) == 0 {
+	if err := g.SetRequest(request); err != nil {
+		log.Fatal(err, ": failed to set request")
+	}
+	if len(request.FileToGenerate) == 0 {
 		log.Fatal(err, ": no input files")
 	}
 
 	// Verify the command-line parameters.
-	params := util.ParseParams(g.Request)
+	params := util.ParseParams(request)
 
 	// Handle configuration files.
 	if conf, ok := params["conf"]; ok {
@@ -94,8 +99,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err, ": could not read conf file")
 		}
-		g.Request.Parameter = proto.String(string(confData))
-		params = extendParams(params, util.ParseParams(g.Request))
+		request.Parameter = proto.String(string(confData))
+		params = extendParams(params, util.ParseParams(request))
 	}
 
 	paramTemplate, haveTemplate := params["template"]
