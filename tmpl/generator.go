@@ -141,7 +141,6 @@ func (g *Generator) SetRequest(r *plugin.CodeGeneratorRequest) error {
 // New returns a new generator for the given template.
 func New() *Generator {
 	return &Generator{
-		request:  &plugin.CodeGeneratorRequest{},
 		response: &plugin.CodeGeneratorResponse{},
 		registry: gateway.NewRegistry(),
 	}
