@@ -79,7 +79,7 @@ func main() {
 	}
 
 	// Unmarshal the protoc generation request.
-	var request *plugin.CodeGeneratorRequest
+	request := &plugin.CodeGeneratorRequest{}
 	if err := proto.Unmarshal(data, request); err != nil {
 		log.Fatal(err, ": failed to parse input proto")
 	}
