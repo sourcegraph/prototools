@@ -35,7 +35,7 @@ Would produce documentation for `file.proto` inside the `doc/` directory using t
 | `root`         | (current working directory) | Root directory path to prefix all generated URLs with.             |
 | `filemap`      | none                        | A XML filemap, which specifies how output files are generated.     |
 | `dump-filemap` | none                        | Dump the executed filemap template to the given filepath.          |
-| `apihost`      | none                        | (grpc-gateway) API host base URL (e.g. `http://api.mysite.com/`)   |
+| `apihost`      | none                        | (grpc-gateway) API host base URL (e.g. `api.mysite.com`, no colons in value)   |
 | `conf`         | none                        | Comma-separated text configuration file with these very options.   |
 
 The `template` and `filemap` options are exclusive (only one may be used at a time).
