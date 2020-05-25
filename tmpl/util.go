@@ -13,8 +13,8 @@ import (
 	"strings"
 	"unicode"
 
-	gateway "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/httprule"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/httprule"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"sourcegraph.com/sourcegraph/prototools/util"
 )
