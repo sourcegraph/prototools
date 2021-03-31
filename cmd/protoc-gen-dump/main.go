@@ -13,7 +13,6 @@ package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-du
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -28,7 +27,7 @@ func main() {
 	log.SetPrefix("protoc-gen-proto: ")
 
 	// Read input from the protoc compiler.
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err, ": failed to read input")
 	}

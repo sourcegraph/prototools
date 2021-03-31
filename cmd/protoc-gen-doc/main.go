@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"go/build"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -73,7 +72,7 @@ func main() {
 	g := tmpl.New()
 
 	// Read input from the protoc compiler.
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err, ": failed to read input")
 	}
@@ -95,7 +94,7 @@ func main() {
 
 	// Handle configuration files.
 	if conf, ok := params["conf"]; ok {
-		confData, err := ioutil.ReadFile(conf)
+		confData, err := os.ReadFile(conf)
 		if err != nil {
 			log.Fatal(err, ": could not read conf file")
 		}
@@ -116,7 +115,7 @@ func main() {
 		fileMapData = fmt.Sprintf(basicFileMap, paramTemplate)
 	} else if haveFileMap {
 		// Load the filemap template.
-		data, err := ioutil.ReadFile(paramFileMap)
+		data, err := os.ReadFile(paramFileMap)
 		if err != nil {
 			log.Fatal(err, ": failed to read file map")
 		}

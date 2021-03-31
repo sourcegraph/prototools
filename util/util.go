@@ -3,7 +3,6 @@ package util // import "sourcegraph.com/sourcegraph/prototools/util"
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"path"
 	"strings"
 
@@ -166,7 +165,7 @@ func PackageName(f *descriptor.FileDescriptorProto) string {
 // plugin, returning any error that occurs.
 func ReadJSONFile(path string) (*plugin.CodeGeneratorRequest, error) {
 	// Read the file.
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -7,13 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"path"
 
-	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 )
 
 // Generator is the type whose methods generate the output, stored in the associated response structure.
@@ -261,7 +260,7 @@ func (g *Generator) loadTemplate(t *template.Template, tmplPath string) (*templa
 	// Determine the open function.
 	readFile := g.ReadFile
 	if readFile == nil {
-		readFile = ioutil.ReadFile
+		readFile = os.ReadFile
 	}
 
 	// Read the file.

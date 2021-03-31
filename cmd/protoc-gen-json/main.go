@@ -14,7 +14,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -29,7 +28,7 @@ func main() {
 	log.SetPrefix("protoc-gen-json: ")
 
 	// Read input from the protoc compiler.
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err, ": failed to read input")
 	}
