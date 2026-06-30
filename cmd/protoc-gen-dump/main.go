@@ -2,18 +2,17 @@
 //
 // Documentation can be found inside:
 //
-//  README.dump.md (https://github.com/sourcegraph/prototools/blob/master/README.dump.md)
+//	README.dump.md (https://github.com/sourcegraph/prototools/blob/master/README.dump.md)
 //
 // More information about Protobuf can be found at:
 //
-// 	https://developers.google.com/protocol-buffers/
-//
+//	https://developers.google.com/protocol-buffers/
 package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-dump"
 
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
+
 	"log"
 	"os"
 
@@ -28,7 +27,7 @@ func main() {
 	log.SetPrefix("protoc-gen-proto: ")
 
 	// Read input from the protoc compiler.
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err, ": failed to read input")
 	}
@@ -55,12 +54,12 @@ func main() {
 	response := &plugin.CodeGeneratorResponse{}
 	data, err = proto.Marshal(request)
 	if err != nil {
-		response.Error = proto.String(err.Error())
+		response.Error = new(err.Error())
 	} else {
 		response.File = []*plugin.CodeGeneratorResponse_File{
 			&plugin.CodeGeneratorResponse_File{
-				Name:    proto.String(name),
-				Content: proto.String(string(data)),
+				Name:    new(name),
+				Content: new(string(data)),
 			},
 		}
 	}

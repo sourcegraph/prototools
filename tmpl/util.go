@@ -13,9 +13,9 @@ import (
 	"strings"
 	"unicode"
 
+	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/httprule"
-	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"sourcegraph.com/sourcegraph/prototools/util"
 )
 
@@ -53,20 +53,19 @@ func slug(s string) string {
 // newlines together except doubles (i.e. blank lines), and then returns
 // segments:
 //
-//   we like to\n
-//   keep width\n
-//   below 10\n
-//   \n
-//   but sometimes we go over\n
-//   \t   \n
-//   crazy, right?\n
+//	we like to\n
+//	keep width\n
+//	below 10\n
+//	\n
+//	but sometimes we go over\n
+//	\t   \n
+//	crazy, right?\n
 //
 // And returns it in segments of blank newlines:
 //
-//   "we like to keep width below 10"
-//   "but sometimes we go over"
-//   "crazy, right?"
-//
+//	"we like to keep width below 10"
+//	"but sometimes we go over"
+//	"crazy, right?"
 func comments(c string) []string {
 	var (
 		scanner  = bufio.NewScanner(bytes.NewBufferString(c))
@@ -98,7 +97,7 @@ var Preload = (&tmplFuncs{}).funcMap()
 // cacheItem is a single cache item with a value and a location -- effectively
 // it is just used for searching.
 type cacheItem struct {
-	V interface{}
+	V any
 	L *descriptor.SourceCodeInfo_Location
 }
 
@@ -117,7 +116,7 @@ type tmplFuncs struct {
 
 // funcMap returns the function map for feeding into templates.
 func (f *tmplFuncs) funcMap() template.FuncMap {
-	return map[string]interface{}{
+	return map[string]any{
 		"cleanLabel": f.cleanLabel,
 		"cleanType":  f.cleanType,
 		"fieldType":  f.fieldType,
@@ -179,11 +178,11 @@ func (f *tmplFuncs) fieldType(field *descriptor.FieldDescriptorProto) string {
 
 // dict builds a map of paired items, allowing you to invoke a template with
 // multiple parameters.
-func (f *tmplFuncs) dict(pairs ...interface{}) (map[string]interface{}, error) {
+func (f *tmplFuncs) dict(pairs ...any) (map[string]any, error) {
 	if len(pairs)%2 != 0 {
 		return nil, errors.New("expected pairs")
 	}
-	m := make(map[string]interface{}, len(pairs)/2)
+	m := make(map[string]any, len(pairs)/2)
 	for i := 0; i < len(pairs); i += 2 {
 		m[pairs[i].(string)] = pairs[i+1]
 	}
@@ -293,7 +292,7 @@ func (f *tmplFuncs) resolvePkgPath(pkg string) string {
 
 // location returns the source code info location for the generic AST-like node
 // from the descriptor package.
-func (f *tmplFuncs) location(x interface{}) *descriptor.SourceCodeInfo_Location {
+func (f *tmplFuncs) location(x any) *descriptor.SourceCodeInfo_Location {
 	// Validate that we got a sane type from the template.
 	pkgPath := reflect.Indirect(reflect.ValueOf(x)).Type().PkgPath()
 	if pkgPath != "" && pkgPath != "github.com/golang/protobuf/protoc-gen-go/descriptor" &&
@@ -315,7 +314,7 @@ func (f *tmplFuncs) location(x interface{}) *descriptor.SourceCodeInfo_Location 
 }
 
 // findCachedItem finds and returns a cached location for x.
-func (f *tmplFuncs) findCachedItem(x interface{}) *descriptor.SourceCodeInfo_Location {
+func (f *tmplFuncs) findCachedItem(x any) *descriptor.SourceCodeInfo_Location {
 	for _, i := range f.locCache {
 		if i.V == x {
 			return i.L
@@ -326,17 +325,17 @@ func (f *tmplFuncs) findCachedItem(x interface{}) *descriptor.SourceCodeInfo_Loc
 
 // walkPath walks through the root node (the f.f file) descending down the path
 // until it is resolved, at which point the value is returned.
-func (f *tmplFuncs) walkPath(path []int32) interface{} {
+func (f *tmplFuncs) walkPath(path []int32) any {
 	if len(path) == 0 {
 		return f.f
 	}
 	var (
-		walker func(id int, v interface{}) bool
-		found  interface{}
+		walker func(id int, v any) bool
+		found  any
 		target = int(path[0])
 	)
 	path = path[1:]
-	walker = func(id int, v interface{}) bool {
+	walker = func(id int, v any) bool {
 		if id != target {
 			return true
 		}
@@ -355,7 +354,7 @@ func (f *tmplFuncs) walkPath(path []int32) interface{} {
 
 // protoFields invokes fn with the protobuf tag ID and its in-memory Go value
 // given a descriptor node type. It stops invoking fn when it returns false.
-func (f *tmplFuncs) protoFields(node reflect.Value, fn func(id int, v interface{}) bool) {
+func (f *tmplFuncs) protoFields(node reflect.Value, fn func(id int, v any) bool) {
 	indirect := reflect.Indirect(node)
 
 	switch indirect.Kind() {

@@ -3,7 +3,8 @@ package util // import "sourcegraph.com/sourcegraph/prototools/util"
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
+
 	"path"
 	"strings"
 
@@ -86,17 +87,16 @@ func IsFullyQualified(symbolPath string) bool {
 // TrimElem returns the given symbol path with at max N elements trimmed off the
 // left (outermost) side.
 //
-//  TrimElem("a.b.c", 1) == "b.c"
-//  TrimElem(".a.b.c", 1) == "b.c"
-//  TrimElem(".a.b.c", -1) == ".a.b"
+//	TrimElem("a.b.c", 1) == "b.c"
+//	TrimElem(".a.b.c", 1) == "b.c"
+//	TrimElem(".a.b.c", -1) == ".a.b"
 //
 // Extreme cases won't panic, either:
 //
-//  TrimElem("a.b.c", 1000) == ""
-//  TrimElem(".a.b.c", 1000) == ""
-//  TrimElem("a.b.c", -1000) == ""
-//  TrimElem(".a.b.c", -1000) == ""
-//
+//	TrimElem("a.b.c", 1000) == ""
+//	TrimElem(".a.b.c", 1000) == ""
+//	TrimElem("a.b.c", -1000) == ""
+//	TrimElem(".a.b.c", -1000) == ""
 func TrimElem(symbolPath string, n int) string {
 	if n == 0 {
 		return symbolPath
@@ -126,18 +126,17 @@ func TrimElem(symbolPath string, n int) string {
 
 // CountElem returns the number of elements that the symbol path contains.
 //
-//  CountElem("a.b.c") == 3
-//  CountElem(".a.b.c") == 3
-//  CountElem("a.b.c.d") == 4
-//  CountElem("a") == 1
-//  CountElem(".") == 0
-//  CountElem("") == 0
-//
+//	CountElem("a.b.c") == 3
+//	CountElem(".a.b.c") == 3
+//	CountElem("a.b.c.d") == 4
+//	CountElem("a") == 1
+//	CountElem(".") == 0
+//	CountElem("") == 0
 func CountElem(symbolPath string) int {
 	// Don't care about fully-qualified dot prefix.
 	symbolPath = strings.TrimPrefix(symbolPath, ".")
 	count := 0
-	for _, s := range strings.Split(symbolPath, ".") {
+	for s := range strings.SplitSeq(symbolPath, ".") {
 		if len(s) > 0 {
 			count++
 		}
@@ -166,7 +165,7 @@ func PackageName(f *descriptor.FileDescriptorProto) string {
 // plugin, returning any error that occurs.
 func ReadJSONFile(path string) (*plugin.CodeGeneratorRequest, error) {
 	// Read the file.
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

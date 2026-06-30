@@ -2,12 +2,11 @@
 //
 // Documentation can be found inside:
 //
-//  README.doc.md (https://github.com/sourcegraph/prototools/blob/master/README.doc.md)
+//	README.doc.md (https://github.com/sourcegraph/prototools/blob/master/README.doc.md)
 //
 // More information about Protobuf can be found at:
 //
-// 	https://developers.google.com/protocol-buffers/
-//
+//	https://developers.google.com/protocol-buffers/
 package main // import "sourcegraph.com/sourcegraph/prototools/cmd/protoc-gen-doc"
 
 import (
@@ -16,7 +15,6 @@ import (
 	"fmt"
 	"go/build"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -73,7 +71,7 @@ func main() {
 	g := tmpl.New()
 
 	// Read input from the protoc compiler.
-	data, err := ioutil.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err, ": failed to read input")
 	}
@@ -95,11 +93,11 @@ func main() {
 
 	// Handle configuration files.
 	if conf, ok := params["conf"]; ok {
-		confData, err := ioutil.ReadFile(conf)
+		confData, err := os.ReadFile(conf)
 		if err != nil {
 			log.Fatal(err, ": could not read conf file")
 		}
-		request.Parameter = proto.String(string(confData))
+		request.Parameter = new(string(confData))
 		params = extendParams(params, util.ParseParams(request))
 	}
 
@@ -116,7 +114,7 @@ func main() {
 		fileMapData = fmt.Sprintf(basicFileMap, paramTemplate)
 	} else if haveFileMap {
 		// Load the filemap template.
-		data, err := ioutil.ReadFile(paramFileMap)
+		data, err := os.ReadFile(paramFileMap)
 		if err != nil {
 			log.Fatal(err, ": failed to read file map")
 		}
