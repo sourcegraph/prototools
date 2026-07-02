@@ -11,8 +11,8 @@ import (
 
 // jsonFieldTypeZero converts a simple (string, number, bool) field type to it's
 // equivilent zero-value Go type. If the field type is not simple ok == false
-/// is returned.
-func jsonFieldTypeZero(f descriptor.FieldDescriptorProto_Type) (v interface{}, ok bool) {
+// / is returned.
+func jsonFieldTypeZero(f descriptor.FieldDescriptorProto_Type) (v any, ok bool) {
 	switch f {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		return 0.0, true
@@ -57,7 +57,7 @@ func (f *tmplFuncs) jsonMessage(m *descriptor.DescriptorProto) (template.HTML, e
 		swap = make(map[string]string)
 
 		// items is a map of field name to equivilent Go zero value.
-		items = make(map[string]interface{})
+		items = make(map[string]any)
 	)
 	for _, field := range m.Field {
 		repeated := field.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
