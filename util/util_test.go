@@ -3,14 +3,13 @@ package util
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 func TestParseParams(t *testing.T) {
 	params := ParseParams(&plugin.CodeGeneratorRequest{
-		Parameter: proto.String("key =value,abc = d ef , z = g "),
+		Parameter: new("key =value,abc = d ef , z = g "),
 	})
 	if len(params) != 3 {
 		t.Fatal("expected 3 arguments got", len(params))
@@ -95,14 +94,14 @@ func TestCountElem(t *testing.T) {
 
 func TestPackageName(t *testing.T) {
 	got := PackageName(&descriptor.FileDescriptorProto{
-		Package: proto.String("foo"),
+		Package: new("foo"),
 	})
 	if got != "foo" {
 		t.Fatalf("expected explicit package name \"foo\", got %q\n", got)
 	}
 
 	got = PackageName(&descriptor.FileDescriptorProto{
-		Name: proto.String("some/arbitrary/file.proto"),
+		Name: new("some/arbitrary/file.proto"),
 	})
 	if got != "file" {
 		t.Fatalf("expected derived package name \"file\", got %q\n", got)

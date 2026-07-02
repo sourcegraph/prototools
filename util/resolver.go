@@ -8,16 +8,15 @@ import (
 )
 
 // ASTNode is a type from the descriptor package.
-type ASTNode interface{}
+type ASTNode any
 
 // ASTNamedNode is a type from the descriptor package that can return its name
 // string. These include (but are not limited to):
 //
-//  *descriptor.DescriptorProto
-//  *descriptor.EnumDescriptorProto
-//  *descriptor.ServiceDescriptorProto
-//  *descriptor.FieldDescriptorProto
-//
+//	*descriptor.DescriptorProto
+//	*descriptor.EnumDescriptorProto
+//	*descriptor.ServiceDescriptorProto
+//	*descriptor.FieldDescriptorProto
 type ASTNamedNode interface {
 	GetName() string
 }
@@ -25,10 +24,9 @@ type ASTNamedNode interface {
 // search searches below the given AST node for an message, enum, service, or
 // extension with the given symbol path. Valid input types are:
 //
-//  ASTNamedNode
-//  []ASTNamedNode
-//  *descriptor.FileDescriptorProto
-//
+//	ASTNamedNode
+//	[]ASTNamedNode
+//	*descriptor.FileDescriptorProto
 func search(a ASTNode, symbolPath string) ASTNode {
 	// Handle the slice types.
 	rv := reflect.ValueOf(a)
@@ -107,8 +105,7 @@ type Resolver struct {
 // ResolveFile resolves the file that the given symbol is declared inside of, or
 // nil if it is not. It is short-handed for:
 //
-//  _, file := r.Resolve(symbolPath)
-//
+//	_, file := r.Resolve(symbolPath)
 func (r *Resolver) ResolveFile(symbolPath string, relative ASTNode) *descriptor.FileDescriptorProto {
 	_, file := r.Resolve(symbolPath, relative)
 	return file
@@ -117,8 +114,7 @@ func (r *Resolver) ResolveFile(symbolPath string, relative ASTNode) *descriptor.
 // ResolveSymbol resolves the symbol with the given path, or nil of it cannot be
 // resolved. It is short-handed for:
 //
-//  node, _ := r.Resolve(symbolPath)
-//
+//	node, _ := r.Resolve(symbolPath)
 func (r *Resolver) ResolveSymbol(symbolPath string, relative ASTNode) ASTNode {
 	node, _ := r.Resolve(symbolPath, relative)
 	return node
@@ -127,20 +123,20 @@ func (r *Resolver) ResolveSymbol(symbolPath string, relative ASTNode) ASTNode {
 // Resolve resolves the named symbol into its actual AST node and the file that
 // node is inside of. Example symbolPath strings are:
 //
-//  Sym
-//  pkg.Sym
-//  foo.bar.pkg.Sym
-//  .foo.bar.pkg.Sym
+//	Sym
+//	pkg.Sym
+//	foo.bar.pkg.Sym
+//	.foo.bar.pkg.Sym
 //
 // Relative symbol paths like:
 //
-//  Sym
-//  pkg.Sym
-//  foo.bar.Pkg.Sym
+//	Sym
+//	pkg.Sym
+//	foo.bar.Pkg.Sym
 //
 // Are resolved according to the protobuf language doc:
 //
-//  "Packages and Name Resolution" - https://developers.google.com/protocol-buffers/docs/proto#packages
+//	"Packages and Name Resolution" - https://developers.google.com/protocol-buffers/docs/proto#packages
 //
 // As all relative symbol paths in protobuf follow C++ style scoping rules, the
 // path can only be resolved reliably whilst knowing the AST node that
@@ -149,19 +145,19 @@ func (r *Resolver) ResolveSymbol(symbolPath string, relative ASTNode) ASTNode {
 //
 // For example in the pseudo-code:
 //
-//  package pkg;
+//	package pkg;
 //
-//  message Foo {
-//      ...
-//  }
+//	message Foo {
+//	    ...
+//	}
 //
-//  message Bar {
-//      message Foo {
-//          ...
-//      }
+//	message Bar {
+//	    message Foo {
+//	        ...
+//	    }
 //
-//      Foo this = 1;
-//  }
+//	    Foo this = 1;
+//	}
 //
 // Resolution of the message field pkg.Bar.this must be done *relative* to the
 // AST node for pkg.Bar, because pkg.Bar.thi sis of type pkg.Bar.Foo, not

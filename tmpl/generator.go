@@ -10,10 +10,9 @@ import (
 	"io/ioutil"
 	"path"
 
-	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 )
 
 // Generator is the type whose methods generate the output, stored in the associated response structure.
@@ -106,7 +105,7 @@ func (g *Generator) Generate() (response *plugin.CodeGeneratorResponse, err erro
 //
 // The ctx parameter specifies an arbitrary context for which to execute the
 // template with, it is exposed to the executed template file as "Ctx".
-func (g *Generator) GenerateOutput(name string, ctx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+func (g *Generator) GenerateOutput(name string, ctx any) (*plugin.CodeGeneratorResponse_File, error) {
 	// Find the generator with that output filename.
 	for _, gen := range g.FileMap.Generate {
 		if gen.Output != name {
@@ -148,7 +147,7 @@ func New() *Generator {
 
 // genTarget a filemap generator with a specific target (e.g. for individual doc
 // pages).
-func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+func (g *Generator) genTarget(gen *FileMapGenerate, userCtx any) (*plugin.CodeGeneratorResponse_File, error) {
 	var (
 		buf       = bytes.NewBuffer(nil)
 		protoFile = g.request.GetProtoFile()
@@ -187,7 +186,7 @@ func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugi
 		Generate *FileMapGenerate
 		Data     map[string]string
 		Request  *plugin.CodeGeneratorRequest
-		Ctx      interface{}
+		Ctx      any
 	}{
 		f,
 		gen,
@@ -201,14 +200,14 @@ func (g *Generator) genTarget(gen *FileMapGenerate, userCtx interface{}) (*plugi
 
 	// Generate the response file with the rendered template.
 	return &plugin.CodeGeneratorResponse_File{
-		Name:    proto.String(gen.Output),
-		Content: proto.String(buf.String()),
+		Name:    new(gen.Output),
+		Content: new(buf.String()),
 	}, nil
 }
 
 // genNoTarget executes a target-less filemap generator (e.g. for index pages
 // rather than individual doc pages). It panics if gen.Target != "".
-func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx interface{}) (*plugin.CodeGeneratorResponse_File, error) {
+func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx any) (*plugin.CodeGeneratorResponse_File, error) {
 	buf := bytes.NewBuffer(nil)
 
 	// Only running generators not on proto files (i.e. generators without
@@ -234,7 +233,7 @@ func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx interface{}) (*plu
 		*plugin.CodeGeneratorRequest
 		Generate *FileMapGenerate
 		Data     map[string]string
-		Ctx      interface{}
+		Ctx      any
 	}{
 		g.request,
 		gen,
@@ -247,8 +246,8 @@ func (g *Generator) genNoTarget(gen *FileMapGenerate, userCtx interface{}) (*plu
 
 	// Generate the response file with the rendered template.
 	return &plugin.CodeGeneratorResponse_File{
-		Name:    proto.String(gen.Output),
-		Content: proto.String(buf.String()),
+		Name:    new(gen.Output),
+		Content: new(buf.String()),
 	}, nil
 }
 
